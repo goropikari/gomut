@@ -108,6 +108,26 @@ func TestHasNickname(t *testing.T) {
 	})
 }
 
+func TestAlwaysEnabled(t *testing.T) {
+	t.Run("given no input, it returns true", func(t *testing.T) {
+		// Arrange
+		got := sample.AlwaysEnabled()
+
+		// Assert
+		assert.True(t, got)
+	})
+}
+
+func TestAlwaysDisabled(t *testing.T) {
+	t.Run("given no input, it returns false", func(t *testing.T) {
+		// Arrange
+		got := sample.AlwaysDisabled()
+
+		// Assert
+		assert.False(t, got)
+	})
+}
+
 func TestEnableFlag(t *testing.T) {
 	t.Run("given a flag to enable, it returns the combined mask", func(t *testing.T) {
 		// Arrange
@@ -115,6 +135,26 @@ func TestEnableFlag(t *testing.T) {
 
 		// Assert
 		assert.Equal(t, uint8(0b0101), got)
+	})
+}
+
+func TestAddBonus(t *testing.T) {
+	t.Run("given a score and bonus, it adds the bonus to the score", func(t *testing.T) {
+		// Arrange
+		got := sample.AddBonus(10, 5)
+
+		// Assert
+		assert.Equal(t, 15, got)
+	})
+}
+
+func TestAdvanceCount(t *testing.T) {
+	t.Run("given a counter, it increments the counter", func(t *testing.T) {
+		// Arrange
+		got := sample.AdvanceCount(3)
+
+		// Assert
+		assert.Equal(t, 4, got)
 	})
 }
 

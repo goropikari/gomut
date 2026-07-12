@@ -13,14 +13,17 @@ const (
 type MutationKind string
 
 const (
-	MutationKindComparisonOperator MutationKind = "comparison_operator"
-	MutationKindLogicalOperator    MutationKind = "logical_operator"
-	MutationKindGuardClause        MutationKind = "guard_clause"
-	MutationKindArithmeticOperator MutationKind = "arithmetic_operator"
-	MutationKindControlFlow        MutationKind = "control_flow"
-	MutationKindAssignmentBitwise  MutationKind = "assignment_bitwise"
-	MutationKindReturn             MutationKind = "return"
-	MutationKindNilCheck           MutationKind = "nil_check"
+	MutationKindComparisonOperator   MutationKind = "comparison_operator"
+	MutationKindLogicalOperator      MutationKind = "logical_operator"
+	MutationKindGuardClause          MutationKind = "guard_clause"
+	MutationKindArithmeticOperator   MutationKind = "arithmetic_operator"
+	MutationKindAssignmentArithmetic MutationKind = "assignment_arithmetic"
+	MutationKindControlFlow          MutationKind = "control_flow"
+	MutationKindAssignmentBitwise    MutationKind = "assignment_bitwise"
+	MutationKindIncDec               MutationKind = "inc_dec"
+	MutationKindReturn               MutationKind = "return"
+	MutationKindNilCheck             MutationKind = "nil_check"
+	MutationKindBooleanLiteral       MutationKind = "boolean_literal"
 )
 
 type MutationResult string

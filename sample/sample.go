@@ -43,11 +43,35 @@ func HasNickname(nickname *string) bool {
 	return nickname != nil
 }
 
+// AlwaysEnabled returns a fixed boolean literal.
+func AlwaysEnabled() bool {
+	return true
+}
+
+// AlwaysDisabled returns a fixed boolean literal.
+func AlwaysDisabled() bool {
+	return false
+}
+
 // EnableFlag turns on the provided flag bits.
 func EnableFlag(mask, flag uint8) uint8 {
 	mask |= flag
 
 	return mask
+}
+
+// AddBonus adds a bonus score onto the current score.
+func AddBonus(score, bonus int) int {
+	score += bonus
+
+	return score
+}
+
+// AdvanceCount increments the counter by one.
+func AdvanceCount(count int) int {
+	count++
+
+	return count
 }
 
 // NeedsReview reports whether the item should be manually reviewed.

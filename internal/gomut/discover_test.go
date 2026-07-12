@@ -57,8 +57,26 @@ func SetMask(mask uint8) uint8 {
 	return mask
 }
 
+func AddBonus(score, bonus int) int {
+	score += bonus
+	return score
+}
+
+func AdvanceCount(count int) int {
+	count++
+	return count
+}
+
 func HasNickname(nickname *string) bool {
 	return nickname != nil
+}
+
+func AlwaysEnabled() bool {
+	return true
+}
+
+func AlwaysDisabled() bool {
+	return false
 }
 `), 0o600))
 
@@ -85,11 +103,14 @@ func HasNickname(nickname *string) bool {
 		assert.True(t, kinds[gomut.MutationKindComparisonOperator], "expected comparison operator mutation to remain available")
 		assert.True(t, kinds[gomut.MutationKindLogicalOperator], "expected logical operator mutation to remain available")
 		assert.True(t, kinds[gomut.MutationKindArithmeticOperator], "expected arithmetic operator mutation to remain available")
+		assert.True(t, kinds[gomut.MutationKindAssignmentArithmetic], "expected assignment arithmetic mutation to be discovered")
 		assert.True(t, kinds[gomut.MutationKindAssignmentBitwise], "expected assignment bitwise mutation to be discovered")
+		assert.True(t, kinds[gomut.MutationKindIncDec], "expected inc/dec mutation to be discovered")
 		assert.True(t, kinds[gomut.MutationKindGuardClause], "expected guard clause mutation to remain available")
 		assert.True(t, kinds[gomut.MutationKindControlFlow], "expected control flow mutation to be discovered")
 		assert.True(t, kinds[gomut.MutationKindReturn], "expected return mutation to be discovered")
 		assert.True(t, kinds[gomut.MutationKindNilCheck], "expected nil check mutation to be discovered")
+		assert.True(t, kinds[gomut.MutationKindBooleanLiteral], "expected boolean literal mutation to be discovered")
 
 		require.NotNil(t, controlFlowCandidate)
 		assert.Contains(t, controlFlowCandidate.File, filepath.ToSlash(filepath.Join("sample", "sample.go")))

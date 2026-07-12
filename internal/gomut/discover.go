@@ -44,6 +44,14 @@ var assignMutationSpecs = map[token.Token]assignMutationSpec{
 	token.AND_NOT_ASSIGN: {kind: MutationKindAssignmentBitwise, replacement: "|="},
 }
 
+var arithmeticAssignMutationSpecs = map[token.Token]assignMutationSpec{
+	token.ADD_ASSIGN: {kind: MutationKindAssignmentArithmetic, replacement: "-="},
+	token.SUB_ASSIGN: {kind: MutationKindAssignmentArithmetic, replacement: "+="},
+	token.MUL_ASSIGN: {kind: MutationKindAssignmentArithmetic, replacement: "/="},
+	token.QUO_ASSIGN: {kind: MutationKindAssignmentArithmetic, replacement: "*="},
+	token.REM_ASSIGN: {kind: MutationKindAssignmentArithmetic, replacement: "*="},
+}
+
 func DiscoverCandidates(root string, packages []string, target Target, coverage map[string]FileCoverage) ([]Candidate, error) {
 	var candidates []Candidate
 
@@ -118,8 +126,12 @@ func mutationCandidateFromNode(fset *token.FileSet, src []byte, file, pkg string
 		}
 
 		return mutationFromBinaryExpr(fset, src, file, pkg, node, target, coverage)
+	case *ast.Ident:
+		return mutationFromBooleanLiteral(fset, src, file, pkg, node, target, coverage)
 	case *ast.AssignStmt:
 		return mutationFromAssignStmt(fset, src, file, pkg, node, target, coverage)
+	case *ast.IncDecStmt:
+		return mutationFromIncDecStmt(fset, src, file, pkg, node, target, coverage)
 	case *ast.IfStmt:
 		return mutationFromIfStmt(fset, src, file, pkg, node, target, coverage)
 	case *ast.ReturnStmt:
@@ -127,6 +139,39 @@ func mutationCandidateFromNode(fset *token.FileSet, src []byte, file, pkg string
 	default:
 		return Candidate{}, false
 	}
+}
+
+func mutationFromBooleanLiteral(fset *token.FileSet, src []byte, file, pkg string, node *ast.Ident, target Target, coverage FileCoverage) (Candidate, bool) {
+	if node == nil || (node.Name != "true" && node.Name != "false") {
+		return Candidate{}, false
+	}
+
+	pos := fset.Position(node.Pos())
+
+	line := pos.Line
+	if !mutationAllowedByTarget(file, line, target) {
+		return Candidate{}, false
+	}
+
+	start := pos.Offset
+	end := start + len(node.Name)
+
+	replacement := "false"
+	if node.Name == "false" {
+		replacement = "true"
+	}
+
+	return Candidate{
+		File:        repoRel(file),
+		Line:        line,
+		Kind:        MutationKindBooleanLiteral,
+		Original:    node.Name,
+		Replacement: replacement,
+		Start:       start,
+		End:         end,
+		PackagePath: pkg,
+		Covered:     lineCovered(coverage, line),
+	}, true
 }
 
 func mutationFromNilCheckBinaryExpr(fset *token.FileSet, src []byte, file, pkg string, node *ast.BinaryExpr, target Target, coverage FileCoverage) (Candidate, bool) {
@@ -256,6 +301,10 @@ func mutationFromReturnStmt(fset *token.FileSet, src []byte, file, pkg string, n
 func mutationFromAssignStmt(fset *token.FileSet, src []byte, file, pkg string, node *ast.AssignStmt, target Target, coverage FileCoverage) (Candidate, bool) {
 	spec, ok := assignMutationSpecs[node.Tok]
 	if !ok {
+		spec, ok = arithmeticAssignMutationSpecs[node.Tok]
+	}
+
+	if !ok {
 		return Candidate{}, false
 	}
 
@@ -275,6 +324,39 @@ func mutationFromAssignStmt(fset *token.FileSet, src []byte, file, pkg string, n
 		Kind:        spec.kind,
 		Original:    node.Tok.String(),
 		Replacement: spec.replacement,
+		Start:       start,
+		End:         end,
+		PackagePath: pkg,
+		Covered:     lineCovered(coverage, line),
+	}, true
+}
+
+func mutationFromIncDecStmt(fset *token.FileSet, src []byte, file, pkg string, node *ast.IncDecStmt, target Target, coverage FileCoverage) (Candidate, bool) {
+	if node == nil {
+		return Candidate{}, false
+	}
+
+	pos := fset.Position(node.TokPos)
+
+	line := pos.Line
+	if !mutationAllowedByTarget(file, line, target) {
+		return Candidate{}, false
+	}
+
+	start := pos.Offset
+	end := start + len(node.Tok.String())
+
+	replacement := "--"
+	if node.Tok == token.DEC {
+		replacement = "++"
+	}
+
+	return Candidate{
+		File:        repoRel(file),
+		Line:        line,
+		Kind:        MutationKindIncDec,
+		Original:    node.Tok.String(),
+		Replacement: replacement,
 		Start:       start,
 		End:         end,
 		PackagePath: pkg,

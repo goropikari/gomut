@@ -168,6 +168,52 @@ func TestRecordJSONIncludesMutationReplacementDetails(t *testing.T) {
 		assert.JSONEq(t, `{"target":{"mode":"package","value":"./sample"},"started_at":"","command":"","summary":{"total":0,"killed":0,"lived":0,"not_covered":0,"timed_out":0,"not_viable":0},"mutation":{"file":"sample.go","line":12,"kind":"control_flow","original":"ready","replacement":"!ready","result":"KILLED","message":"killed by tests"}}`, string(data))
 	})
 
+	t.Run("given an assignment arithmetic mutation record, it serializes the assignment_arithmetic kind", func(t *testing.T) {
+		// Arrange
+		record := gomut.Record{
+			Target: gomut.Target{Mode: gomut.TargetModePackage, Value: "./sample"},
+			Mutation: gomut.MutationMetadata{
+				File:        "sample.go",
+				Line:        52,
+				Kind:        gomut.MutationKindAssignmentArithmetic,
+				Original:    "+=",
+				Replacement: "-=",
+				Result:      gomut.MutationResultLived,
+				Message:     "ok",
+			},
+		}
+
+		// Act
+		data, err := json.Marshal(record)
+
+		// Assert
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"target":{"mode":"package","value":"./sample"},"started_at":"","command":"","summary":{"total":0,"killed":0,"lived":0,"not_covered":0,"timed_out":0,"not_viable":0},"mutation":{"file":"sample.go","line":52,"kind":"assignment_arithmetic","original":"+=","replacement":"-=","result":"LIVED","message":"ok"}}`, string(data))
+	})
+
+	t.Run("given an inc/dec mutation record, it serializes the inc_dec kind", func(t *testing.T) {
+		// Arrange
+		record := gomut.Record{
+			Target: gomut.Target{Mode: gomut.TargetModePackage, Value: "./sample"},
+			Mutation: gomut.MutationMetadata{
+				File:        "sample.go",
+				Line:        58,
+				Kind:        gomut.MutationKindIncDec,
+				Original:    "++",
+				Replacement: "--",
+				Result:      gomut.MutationResultLived,
+				Message:     "ok",
+			},
+		}
+
+		// Act
+		data, err := json.Marshal(record)
+
+		// Assert
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"target":{"mode":"package","value":"./sample"},"started_at":"","command":"","summary":{"total":0,"killed":0,"lived":0,"not_covered":0,"timed_out":0,"not_viable":0},"mutation":{"file":"sample.go","line":58,"kind":"inc_dec","original":"++","replacement":"--","result":"LIVED","message":"ok"}}`, string(data))
+	})
+
 	t.Run("given a return mutation record, it serializes the return kind", func(t *testing.T) {
 		// Arrange
 		record := gomut.Record{
@@ -212,5 +258,28 @@ func TestRecordJSONIncludesMutationReplacementDetails(t *testing.T) {
 		// Assert
 		require.NoError(t, err)
 		assert.JSONEq(t, `{"target":{"mode":"package","value":"./sample"},"started_at":"","command":"","summary":{"total":0,"killed":0,"lived":0,"not_covered":0,"timed_out":0,"not_viable":0},"mutation":{"file":"sample.go","line":31,"kind":"nil_check","original":"!=","replacement":"==","result":"LIVED","message":"ok"}}`, string(data))
+	})
+
+	t.Run("given a boolean literal mutation record, it serializes the boolean_literal kind", func(t *testing.T) {
+		// Arrange
+		record := gomut.Record{
+			Target: gomut.Target{Mode: gomut.TargetModePackage, Value: "./sample"},
+			Mutation: gomut.MutationMetadata{
+				File:        "sample.go",
+				Line:        40,
+				Kind:        gomut.MutationKindBooleanLiteral,
+				Original:    "true",
+				Replacement: "false",
+				Result:      gomut.MutationResultLived,
+				Message:     "ok",
+			},
+		}
+
+		// Act
+		data, err := json.Marshal(record)
+
+		// Assert
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"target":{"mode":"package","value":"./sample"},"started_at":"","command":"","summary":{"total":0,"killed":0,"lived":0,"not_covered":0,"timed_out":0,"not_viable":0},"mutation":{"file":"sample.go","line":40,"kind":"boolean_literal","original":"true","replacement":"false","result":"LIVED","message":"ok"}}`, string(data))
 	})
 }
