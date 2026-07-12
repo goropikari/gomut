@@ -183,3 +183,14 @@ func IgnoredThreshold(score int) bool {
 
 	return false
 }
+
+type SomeDefinedType int
+
+const (
+	foo SomeDefinedType = 10
+	bar SomeDefinedType = 11
+)
+
+func ConstVariable() bool {
+	return foo < bar
+}
