@@ -51,6 +51,11 @@ func IsReady(ready bool) bool {
 func Add(a, b int) int {
 	return a + b
 }
+
+func SetMask(mask uint8) uint8 {
+	mask |= 1
+	return mask
+}
 `), 0o600))
 
 		// Act
@@ -61,10 +66,12 @@ func Add(a, b int) int {
 		require.NotEmpty(t, candidates)
 
 		kinds := map[gomut.MutationKind]bool{}
+
 		var controlFlowCandidate *gomut.Candidate
 
 		for i := range candidates {
 			candidate := candidates[i]
+
 			kinds[candidate.Kind] = true
 			if candidate.Kind == gomut.MutationKindControlFlow && candidate.Original == "ready" {
 				controlFlowCandidate = &candidates[i]
@@ -74,6 +81,7 @@ func Add(a, b int) int {
 		assert.True(t, kinds[gomut.MutationKindComparisonOperator], "expected comparison operator mutation to remain available")
 		assert.True(t, kinds[gomut.MutationKindLogicalOperator], "expected logical operator mutation to remain available")
 		assert.True(t, kinds[gomut.MutationKindArithmeticOperator], "expected arithmetic operator mutation to remain available")
+		assert.True(t, kinds[gomut.MutationKindAssignmentBitwise], "expected assignment bitwise mutation to be discovered")
 		assert.True(t, kinds[gomut.MutationKindGuardClause], "expected guard clause mutation to remain available")
 		assert.True(t, kinds[gomut.MutationKindControlFlow], "expected control flow mutation to be discovered")
 
@@ -82,6 +90,6 @@ func Add(a, b int) int {
 		assert.Equal(t, gomut.MutationKindControlFlow, controlFlowCandidate.Kind)
 		assert.Equal(t, "ready", controlFlowCandidate.Original)
 		assert.Equal(t, "!ready", controlFlowCandidate.Replacement)
-		assert.Greater(t, controlFlowCandidate.Line, 0)
+		assert.Positive(t, controlFlowCandidate.Line)
 	})
 }

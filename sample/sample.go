@@ -29,6 +29,13 @@ func IsAdult(age int) bool {
 	return true
 }
 
+// EnableFlag turns on the provided flag bits.
+func EnableFlag(mask, flag uint8) uint8 {
+	mask |= flag
+
+	return mask
+}
+
 // ValidateQuantity returns an error for negative quantities.
 func ValidateQuantity(quantity int) error {
 	if quantity < 0 {

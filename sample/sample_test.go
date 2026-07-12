@@ -70,6 +70,16 @@ func TestIsAdult(t *testing.T) {
 	})
 }
 
+func TestEnableFlag(t *testing.T) {
+	t.Run("given a flag to enable, it returns the combined mask", func(t *testing.T) {
+		// Arrange
+		got := sample.EnableFlag(0b0001, 0b0100)
+
+		// Assert
+		assert.Equal(t, uint8(0b0101), got)
+	})
+}
+
 func TestValidateQuantity(t *testing.T) {
 	t.Run("given a negative quantity, it returns an error", func(t *testing.T) {
 		// Arrange

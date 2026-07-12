@@ -32,6 +32,18 @@ var binaryMutationSpecs = map[token.Token]binaryMutationSpec{
 	token.REM:  {kind: MutationKindArithmeticOperator, replacement: "*"},
 }
 
+type assignMutationSpec struct {
+	kind        MutationKind
+	replacement string
+}
+
+var assignMutationSpecs = map[token.Token]assignMutationSpec{
+	token.AND_ASSIGN:     {kind: MutationKindAssignmentBitwise, replacement: "|="},
+	token.OR_ASSIGN:      {kind: MutationKindAssignmentBitwise, replacement: "&="},
+	token.XOR_ASSIGN:     {kind: MutationKindAssignmentBitwise, replacement: "&="},
+	token.AND_NOT_ASSIGN: {kind: MutationKindAssignmentBitwise, replacement: "|="},
+}
+
 func DiscoverCandidates(root string, packages []string, target Target, coverage map[string]FileCoverage) ([]Candidate, error) {
 	var candidates []Candidate
 
@@ -88,25 +100,29 @@ func discoverFileCandidates(root, pkg, file string, target Target, coverage map[
 	var candidates []Candidate
 
 	ast.Inspect(astFile, func(n ast.Node) bool {
-		switch node := n.(type) {
-		case *ast.BinaryExpr:
-			if candidate, ok := mutationFromBinaryExpr(fset, src, file, pkg, node, target, covered); ok {
-				candidates = append(candidates, candidate)
-			}
-		case *ast.IfStmt:
-			if candidate, ok := mutationFromIfStmt(fset, src, file, pkg, node, target, covered); ok {
-				candidates = append(candidates, candidate)
-			}
-		case *ast.ReturnStmt:
-			if candidate, ok := mutationFromReturnStmt(fset, src, file, pkg, node, target, covered); ok {
-				candidates = append(candidates, candidate)
-			}
+		if candidate, ok := mutationCandidateFromNode(fset, src, file, pkg, n, target, covered); ok {
+			candidates = append(candidates, candidate)
 		}
 
 		return true
 	})
 
 	return candidates, nil
+}
+
+func mutationCandidateFromNode(fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
+	switch node := node.(type) {
+	case *ast.BinaryExpr:
+		return mutationFromBinaryExpr(fset, src, file, pkg, node, target, coverage)
+	case *ast.AssignStmt:
+		return mutationFromAssignStmt(fset, src, file, pkg, node, target, coverage)
+	case *ast.IfStmt:
+		return mutationFromIfStmt(fset, src, file, pkg, node, target, coverage)
+	case *ast.ReturnStmt:
+		return mutationFromReturnStmt(fset, src, file, pkg, node, target, coverage)
+	default:
+		return Candidate{}, false
+	}
 }
 
 func mutationFromBinaryExpr(fset *token.FileSet, src []byte, file, pkg string, node *ast.BinaryExpr, target Target, coverage FileCoverage) (Candidate, bool) {
@@ -177,6 +193,35 @@ func mutationFromReturnStmt(fset *token.FileSet, src []byte, file, pkg string, n
 	}, true
 }
 
+func mutationFromAssignStmt(fset *token.FileSet, src []byte, file, pkg string, node *ast.AssignStmt, target Target, coverage FileCoverage) (Candidate, bool) {
+	spec, ok := assignMutationSpecs[node.Tok]
+	if !ok {
+		return Candidate{}, false
+	}
+
+	pos := fset.Position(node.TokPos)
+
+	line := pos.Line
+	if !mutationAllowedByTarget(file, line, target) {
+		return Candidate{}, false
+	}
+
+	start := pos.Offset
+	end := start + len(node.Tok.String())
+
+	return Candidate{
+		File:        repoRel(file),
+		Line:        line,
+		Kind:        spec.kind,
+		Original:    node.Tok.String(),
+		Replacement: spec.replacement,
+		Start:       start,
+		End:         end,
+		PackagePath: pkg,
+		Covered:     lineCovered(coverage, line),
+	}, true
+}
+
 // mutationFromIfStmt reserves the control-flow mutation hook for if-condition inversion.
 func mutationFromIfStmt(fset *token.FileSet, src []byte, file, pkg string, node *ast.IfStmt, target Target, coverage FileCoverage) (Candidate, bool) {
 	if node == nil || node.Cond == nil {
@@ -184,6 +229,7 @@ func mutationFromIfStmt(fset *token.FileSet, src []byte, file, pkg string, node 
 	}
 
 	pos := fset.Position(node.Cond.Pos())
+
 	end := fset.Position(node.Cond.End())
 	if pos.Offset < 0 || end.Offset > len(src) || pos.Offset >= end.Offset {
 		return Candidate{}, false
