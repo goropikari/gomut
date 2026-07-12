@@ -1,4 +1,6 @@
 /gomut
+mutations.jsonl
+report.html
 .cache/
 
 .dev-workflow-phase/

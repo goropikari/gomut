@@ -1,0 +1,6 @@
+target:
+  mode: package
+  value: ./internal/gomut
+progress: on
+jsonl: mutations.jsonl
+html: report.html
