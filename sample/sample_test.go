@@ -88,6 +88,26 @@ func TestIsAllowed(t *testing.T) {
 	})
 }
 
+func TestHasNickname(t *testing.T) {
+	t.Run("given a nickname pointer, it reports true", func(t *testing.T) {
+		// Arrange
+		nickname := "gopher"
+
+		got := sample.HasNickname(&nickname)
+
+		// Assert
+		assert.True(t, got)
+	})
+
+	t.Run("given a nil nickname pointer, it reports false", func(t *testing.T) {
+		// Arrange
+		got := sample.HasNickname(nil)
+
+		// Assert
+		assert.False(t, got)
+	})
+}
+
 func TestEnableFlag(t *testing.T) {
 	t.Run("given a flag to enable, it returns the combined mask", func(t *testing.T) {
 		// Arrange

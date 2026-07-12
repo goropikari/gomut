@@ -113,6 +113,10 @@ func discoverFileCandidates(root, pkg, file string, target Target, coverage map[
 func mutationCandidateFromNode(fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
 	switch node := node.(type) {
 	case *ast.BinaryExpr:
+		if candidate, ok := mutationFromNilCheckBinaryExpr(fset, src, file, pkg, node, target, coverage); ok {
+			return candidate, true
+		}
+
 		return mutationFromBinaryExpr(fset, src, file, pkg, node, target, coverage)
 	case *ast.AssignStmt:
 		return mutationFromAssignStmt(fset, src, file, pkg, node, target, coverage)
@@ -123,6 +127,43 @@ func mutationCandidateFromNode(fset *token.FileSet, src []byte, file, pkg string
 	default:
 		return Candidate{}, false
 	}
+}
+
+func mutationFromNilCheckBinaryExpr(fset *token.FileSet, src []byte, file, pkg string, node *ast.BinaryExpr, target Target, coverage FileCoverage) (Candidate, bool) {
+	if node.Op != token.EQL && node.Op != token.NEQ {
+		return Candidate{}, false
+	}
+
+	if !isNilExpr(node.X) && !isNilExpr(node.Y) {
+		return Candidate{}, false
+	}
+
+	pos := fset.Position(node.OpPos)
+
+	line := pos.Line
+	if !mutationAllowedByTarget(file, line, target) {
+		return Candidate{}, false
+	}
+
+	start := pos.Offset
+	end := start + len(node.Op.String())
+
+	replacement := "!="
+	if node.Op == token.NEQ {
+		replacement = "=="
+	}
+
+	return Candidate{
+		File:        repoRel(file),
+		Line:        line,
+		Kind:        MutationKindNilCheck,
+		Original:    node.Op.String(),
+		Replacement: replacement,
+		Start:       start,
+		End:         end,
+		PackagePath: pkg,
+		Covered:     lineCovered(coverage, line),
+	}, true
 }
 
 func mutationFromBinaryExpr(fset *token.FileSet, src []byte, file, pkg string, node *ast.BinaryExpr, target Target, coverage FileCoverage) (Candidate, bool) {
@@ -239,6 +280,11 @@ func mutationFromAssignStmt(fset *token.FileSet, src []byte, file, pkg string, n
 		PackagePath: pkg,
 		Covered:     lineCovered(coverage, line),
 	}, true
+}
+
+func isNilExpr(expr ast.Expr) bool {
+	ident, ok := expr.(*ast.Ident)
+	return ok && ident.Name == "nil"
 }
 
 // mutationFromIfStmt reserves the control-flow mutation hook for if-condition inversion.

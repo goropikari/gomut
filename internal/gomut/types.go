@@ -20,6 +20,7 @@ const (
 	MutationKindControlFlow        MutationKind = "control_flow"
 	MutationKindAssignmentBitwise  MutationKind = "assignment_bitwise"
 	MutationKindReturn             MutationKind = "return"
+	MutationKindNilCheck           MutationKind = "nil_check"
 )
 
 type MutationResult string

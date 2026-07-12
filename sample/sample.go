@@ -38,6 +38,11 @@ func IsAllowed(approved bool) bool {
 	return false
 }
 
+// HasNickname reports whether the nickname pointer is set.
+func HasNickname(nickname *string) bool {
+	return nickname != nil
+}
+
 // EnableFlag turns on the provided flag bits.
 func EnableFlag(mask, flag uint8) uint8 {
 	mask |= flag
