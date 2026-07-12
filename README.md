@@ -1,8 +1,12 @@
 # gomut
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/goropikari/gomut)
+
 `gomut` is a mutation testing CLI for Go projects.
 
 It helps you find weak spots in tests by mutating source code, running `go test` for each mutation, and classifying the result.
+
+This repository is an AI-assisted vibe-coding project.
 
 For the Japanese version, see [README.ja.md](README.ja.md).
 
