@@ -161,7 +161,7 @@ func mutationFromReturnStmt(fset *token.FileSet, src []byte, file, pkg string, n
 func mutationAllowedByTarget(file string, line int, target Target) bool {
 	switch target.Mode {
 	case TargetModeDiff:
-		return diffLineAllowed(file, line)
+		return DiffLineAllowed(file, line)
 	default:
 		return true
 	}
@@ -179,8 +179,8 @@ func lineCovered(coverage FileCoverage, line int) bool {
 	return false
 }
 
-func applyMutation(root string, candidate Candidate) ([]byte, error) {
-	path := filepath.Join(root, candidate.File)
+func ApplyMutation(root string, candidate Candidate) ([]byte, error) {
+	path := resolveSourcePath(root, candidate.File)
 	src, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -193,4 +193,11 @@ func applyMutation(root string, candidate Candidate) ([]byte, error) {
 	out = append(out, candidate.Replacement...)
 	out = append(out, src[candidate.End:]...)
 	return out, nil
+}
+
+func resolveSourcePath(root, file string) string {
+	if filepath.IsAbs(file) {
+		return file
+	}
+	return filepath.Join(root, file)
 }

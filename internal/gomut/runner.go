@@ -163,6 +163,7 @@ func (r *Runner) runBaseline(ctx context.Context, root string, packages []string
 		coverProfile := filepath.Join(os.TempDir(), strings.ReplaceAll("gomut-"+strings.ReplaceAll(pkg, "/", "-"), "...", "all")+".cover")
 		cmd := exec.CommandContext(ctx, "go", "test", "-coverprofile", coverProfile, pkg)
 		cmd.Dir = root
+		cmd.Env = goCommandEnv()
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			return nil, fmt.Errorf("baseline go test failed for %s: %w\n%s", pkg, err, string(out))
@@ -184,7 +185,7 @@ func mergeCoverage(dst, src FileCoverage) FileCoverage {
 }
 
 func (r *Runner) executeMutation(ctx context.Context, root string, candidate Candidate, timeout time.Duration) (MutationResult, string, error) {
-	mutated, err := applyMutation(root, candidate)
+	mutated, err := ApplyMutation(root, candidate)
 	if err != nil {
 		return MutationResultNotViable, err.Error(), nil
 	}
@@ -197,7 +198,7 @@ func (r *Runner) executeMutation(ctx context.Context, root string, candidate Can
 		}
 	}
 
-	path := filepath.Join(root, candidate.File)
+	path := resolveSourcePath(root, candidate.File)
 	backup, err := os.ReadFile(path)
 	if err != nil {
 		return "", "", err
@@ -213,6 +214,7 @@ func (r *Runner) executeMutation(ctx context.Context, root string, candidate Can
 	defer cancel()
 	cmd := exec.CommandContext(cmdCtx, "go", "test", pkg)
 	cmd.Dir = root
+	cmd.Env = goCommandEnv()
 	out, err := cmd.CombinedOutput()
 	if cmdCtx.Err() == context.DeadlineExceeded {
 		return MutationResultTimedOut, "mutation test timed out", nil
@@ -232,8 +234,8 @@ func looksLikeNotViable(output string) bool {
 		"syntax error",
 		"undefined:",
 		"cannot use",
-		"expected",
 		"mismatched types",
+		"too many errors",
 	}
 	for _, needle := range needles {
 		if strings.Contains(output, needle) {

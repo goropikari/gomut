@@ -23,10 +23,10 @@ func diffFiles(ctx context.Context, root, diffRange string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return parseDiffPatch(string(out))
+	return ParseDiffPatch(string(out))
 }
 
-func parseDiffPatch(patch string) ([]string, error) {
+func ParseDiffPatch(patch string) ([]string, error) {
 	var files []string
 	var current string
 	var hunks []diffHunk
@@ -79,7 +79,7 @@ func parseHunkHeader(line string) (diffHunk, error) {
 	return diffHunk{Start: start, End: end}, nil
 }
 
-func diffLineAllowed(file string, line int) bool {
+func DiffLineAllowed(file string, line int) bool {
 	hunks := diffState[filepath.ToSlash(file)]
 	for _, h := range hunks {
 		if line >= h.Start && line <= h.End {
@@ -88,4 +88,3 @@ func diffLineAllowed(file string, line int) bool {
 	}
 	return false
 }
-

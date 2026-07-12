@@ -55,7 +55,7 @@ func (c *Command) runTest(ctx context.Context, args []string) error {
 		return err
 	}
 
-	target, err := resolveTarget(*pkgTarget, *allTarget, *diffRange)
+	target, err := ResolveTarget(*pkgTarget, *allTarget, *diffRange)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func (c *Command) runTest(ctx context.Context, args []string) error {
 	return runner.Run(ctx, cfg)
 }
 
-func resolveTarget(pkg string, all bool, diffRange string) (Target, error) {
+func ResolveTarget(pkg string, all bool, diffRange string) (Target, error) {
 	selected := 0
 	if pkg != "" {
 		selected++

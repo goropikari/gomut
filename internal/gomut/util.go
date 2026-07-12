@@ -12,9 +12,16 @@ import (
 	"strings"
 )
 
+func goCommandEnv() []string {
+	cacheDir := filepath.Join(os.TempDir(), "gomut-gocache")
+	_ = os.MkdirAll(cacheDir, 0o755)
+	return append(os.Environ(), "GOCACHE="+cacheDir)
+}
+
 func listPackages(ctx context.Context, root, pattern string) ([]string, error) {
 	cmd := exec.CommandContext(ctx, "go", "list", pattern)
 	cmd.Dir = root
+	cmd.Env = goCommandEnv()
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, err
@@ -27,6 +34,7 @@ func listPackages(ctx context.Context, root, pattern string) ([]string, error) {
 func packageGoFiles(root, pkg string) ([]string, error) {
 	cmd := exec.Command("go", "list", "-f", "{{.Dir}} {{join .GoFiles \" \"}}", pkg)
 	cmd.Dir = root
+	cmd.Env = goCommandEnv()
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, err
@@ -64,6 +72,7 @@ func packageDirsFromFiles(root string, files []string) ([]string, error) {
 func packageForDir(root, dir string) (string, error) {
 	cmd := exec.Command("go", "list", "-f", "{{.ImportPath}}", dir)
 	cmd.Dir = root
+	cmd.Env = goCommandEnv()
 	out, err := cmd.Output()
 	if err != nil {
 		return "", err
@@ -72,7 +81,7 @@ func packageForDir(root, dir string) (string, error) {
 }
 
 func packageForFile(root, file string) (string, error) {
-	return packageForDir(root, filepath.Dir(filepath.Join(root, file)))
+	return packageForDir(root, filepath.Dir(resolveSourcePath(root, file)))
 }
 
 func readCoverage(path string) (map[string]FileCoverage, error) {

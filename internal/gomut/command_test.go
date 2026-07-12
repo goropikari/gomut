@@ -1,45 +1,49 @@
-package gomut
+package gomut_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	gomut "gomut/internal/gomut"
 )
 
 func TestResolveTarget(t *testing.T) {
-	t.Run("package", func(t *testing.T) {
-		target, err := resolveTarget("./internal/foo", false, "")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if target.Mode != TargetModePackage || target.Value != "./internal/foo" {
-			t.Fatalf("unexpected target: %+v", target)
-		}
+	t.Run("given a package target, it returns package mode", func(t *testing.T) {
+		// Arrange
+		target, err := gomut.ResolveTarget("./internal/foo", false, "")
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, gomut.Target{Mode: gomut.TargetModePackage, Value: "./internal/foo"}, target)
 	})
 
-	t.Run("all", func(t *testing.T) {
-		target, err := resolveTarget("", true, "")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if target.Mode != TargetModeAll || target.Value != "./..." {
-			t.Fatalf("unexpected target: %+v", target)
-		}
+	t.Run("given the all flag, it returns all mode", func(t *testing.T) {
+		// Arrange
+		target, err := gomut.ResolveTarget("", true, "")
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, gomut.Target{Mode: gomut.TargetModeAll, Value: "./..."}, target)
 	})
 
-	t.Run("diff", func(t *testing.T) {
-		target, err := resolveTarget("", false, "HEAD~1..HEAD")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if target.Mode != TargetModeDiff || target.Value != "HEAD~1..HEAD" {
-			t.Fatalf("unexpected target: %+v", target)
-		}
+	t.Run("given a diff range, it returns diff mode", func(t *testing.T) {
+		// Arrange
+		target, err := gomut.ResolveTarget("", false, "HEAD~1..HEAD")
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, gomut.Target{Mode: gomut.TargetModeDiff, Value: "HEAD~1..HEAD"}, target)
 	})
 }
 
 func TestParseDiffPatch(t *testing.T) {
-	patch := `diff --git a/foo.go b/foo.go
+	t.Run("given a single added file hunk, it records the file and changed lines", func(t *testing.T) {
+		// Arrange
+		patch := `diff --git a/foo.go b/foo.go
 index 0000000..1111111 100644
 --- a/foo.go
 +++ b/foo.go
@@ -47,39 +51,38 @@ index 0000000..1111111 100644
 +x
 +y
 `
-	files, err := parseDiffPatch(patch)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(files) != 1 || files[0] != "foo.go" {
-		t.Fatalf("unexpected files: %#v", files)
-	}
-	if !diffLineAllowed("foo.go", 11) || !diffLineAllowed("foo.go", 12) {
-		t.Fatalf("expected diff lines to be allowed")
-	}
-	if diffLineAllowed("foo.go", 9) {
-		t.Fatalf("unexpected line allowance")
-	}
+
+		// Act
+		files, err := gomut.ParseDiffPatch(patch)
+
+		// Assert
+		require.NoError(t, err)
+		require.Len(t, files, 1)
+		assert.Equal(t, "foo.go", files[0])
+		assert.True(t, gomut.DiffLineAllowed("foo.go", 11))
+		assert.True(t, gomut.DiffLineAllowed("foo.go", 12))
+		assert.False(t, gomut.DiffLineAllowed("foo.go", 9))
+	})
 }
 
 func TestApplyMutation(t *testing.T) {
-	dir := t.TempDir()
-	file := filepath.Join(dir, "sample.go")
-	if err := os.WriteFile(file, []byte("package sample\n\nfunc add() int { return 1 + 2 }\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	candidate := Candidate{
-		File:        "sample.go",
-		Start:       42,
-		End:         43,
-		Replacement: "-",
-	}
-	out, err := applyMutation(dir, candidate)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got := string(out); got != "package sample\n\nfunc add() int { return 1 - 2 }\n" {
-		t.Fatalf("unexpected output: %q", got)
-	}
-}
+	t.Run("given a replacement range, it rewrites the file contents", func(t *testing.T) {
+		// Arrange
+		dir := t.TempDir()
+		file := filepath.Join(dir, "sample.go")
+		require.NoError(t, os.WriteFile(file, []byte("package sample\n\nfunc add() int { return 1 + 2 }\n"), 0o644))
+		candidate := gomut.Candidate{
+			File:        "sample.go",
+			Start:       42,
+			End:         43,
+			Replacement: "-",
+		}
 
+		// Act
+		out, err := gomut.ApplyMutation(dir, candidate)
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, "package sample\n\nfunc add() int { return 1 - 2 }\n", string(out))
+	})
+}
