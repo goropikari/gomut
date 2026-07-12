@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-func prepareRunRoot(ctx context.Context, root string, stderr io.Writer) (string, func() error, error) {
+func PrepareRunRoot(ctx context.Context, root string, stderr io.Writer) (string, func() error, error) {
 	parent, err := os.MkdirTemp("", "gomut-run-")
 	if err != nil {
 		return "", nil, err
@@ -33,63 +33,94 @@ func prepareRunRoot(ctx context.Context, root string, stderr io.Writer) (string,
 	return runRoot, cleanup, nil
 }
 
-func copyTree(ctx context.Context, srcRoot, dstRoot string) error {
-	return filepath.WalkDir(srcRoot, func(path string, entry fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
+func prepareRunRoot(ctx context.Context, root string, stderr io.Writer) (string, func() error, error) {
+	return PrepareRunRoot(ctx, root, stderr)
+}
 
+func copyTree(ctx context.Context, srcRoot, dstRoot string) error {
+	return copyTreeDir(ctx, srcRoot, dstRoot, srcRoot)
+}
+
+func copyTreeDir(ctx context.Context, srcRoot, dstRoot, current string) error {
+	entries, err := os.ReadDir(current)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
 
-		rel, err := filepath.Rel(srcRoot, path)
-		if err != nil {
-			return err
-		}
-
-		if rel == "." {
-			return nil
-		}
-
 		if entry.Name() == ".git" {
-			if entry.IsDir() {
-				return filepath.SkipDir
-			}
-
-			return nil
+			continue
 		}
 
-		dstPath := filepath.Join(dstRoot, rel)
-		if entry.Type()&os.ModeSymlink != 0 {
-			target, err := os.Readlink(path)
-			if err != nil {
-				return err
-			}
-
-			if err := os.MkdirAll(filepath.Dir(dstPath), 0o755); err != nil {
-				return err
-			}
-
-			return os.Symlink(target, dstPath)
-		}
-
-		info, err := entry.Info()
-		if err != nil {
+		if err := copyTreeEntry(ctx, srcRoot, dstRoot, current, entry); err != nil {
 			return err
 		}
+	}
 
-		switch {
-		case entry.IsDir():
-			return os.MkdirAll(dstPath, info.Mode().Perm())
-		default:
-			if err := os.MkdirAll(filepath.Dir(dstPath), 0o755); err != nil {
-				return err
-			}
+	return nil
+}
 
-			return copyFile(path, dstPath, info.Mode().Perm())
-		}
-	})
+func copyTreeEntry(ctx context.Context, srcRoot, dstRoot, current string, entry fs.DirEntry) error {
+	srcPath := filepath.Join(current, entry.Name())
+
+	rel, err := filepath.Rel(srcRoot, srcPath)
+	if err != nil {
+		return err
+	}
+
+	dstPath := filepath.Join(dstRoot, rel)
+
+	switch {
+	case entry.Type()&os.ModeSymlink != 0:
+		return copySymlink(srcPath, dstPath)
+	case entry.IsDir():
+		return copyDirectory(ctx, srcRoot, dstRoot, srcPath, dstPath, entry)
+	default:
+		return copyRegularFile(srcPath, dstPath, entry)
+	}
+}
+
+func copySymlink(srcPath, dstPath string) error {
+	target, err := os.Readlink(srcPath)
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(filepath.Dir(dstPath), 0o755); err != nil {
+		return err
+	}
+
+	return os.Symlink(target, dstPath)
+}
+
+func copyDirectory(ctx context.Context, srcRoot, dstRoot, srcPath, dstPath string, entry fs.DirEntry) error {
+	info, err := entry.Info()
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(dstPath, info.Mode().Perm()); err != nil {
+		return err
+	}
+
+	return copyTreeDir(ctx, srcRoot, dstRoot, srcPath)
+}
+
+func copyRegularFile(srcPath, dstPath string, entry fs.DirEntry) error {
+	info, err := entry.Info()
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(filepath.Dir(dstPath), 0o755); err != nil {
+		return err
+	}
+
+	return copyFile(srcPath, dstPath, info.Mode().Perm())
 }
 
 func copyFile(srcPath, dstPath string, perm fs.FileMode) error {

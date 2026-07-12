@@ -104,29 +104,29 @@ gomut test --package ./internal/gomut --jsonl mutations.jsonl
 
 現在対応している mutation 種別は次のとおりです。
 
-| 種類 | 例 |
-| --- | --- |
-| `comparison_operator` | `==` -> `!=`、`!=` -> `==`、`<` -> `<=`、`>` -> `>=`、`<=` -> `<`、`>=` -> `>` |
-| `logical_operator` | `&&` -> `&#124;&#124;`、`&#124;&#124;` -> `&&` |
-| `guard_clause` | 単純な guard clause の return 差し替え |
-| `arithmetic_operator` | `+` -> `-`、`-` -> `+`、`*` -> `/`、`/` -> `*`、`%` -> `*` |
-| `bitwise_operator` | `&` -> `&#124;`、`&#124;` -> `&`、`^` -> `&`、`&^` -> `&#124;` |
-| `shift_operator` | `<<` -> `>>`、`>>` -> `<<` |
-| `assignment_arithmetic` | `+=` -> `-=`, `-=` -> `+=`, `*=` -> `/=`, `/=` -> `*=`, `%=` -> `*=` |
-| `assignment_shift` | `<<=` -> `>>=`、`>>=` -> `<<=` |
-| `assignment_bitwise` | `&=` -> `&#124;=`、`&#124;=` -> `&=`、`^=` -> `&=`、`&^=` -> `&#124;=` |
-| `inc_dec` | `++` -> `--`、`--` -> `++` |
-| `control_flow` | `switch x` の条件反転 |
-| `return` | `return true` -> `return false`、`return false` -> `return true` |
-| `nil_check` | `== nil` -> `!= nil`、`!= nil` -> `== nil` |
-| `boolean_literal` | `true` -> `false`、`false` -> `true` |
-| `integer_literal` | `0` -> `1`、0 以外の整数リテラル -> `0` |
-| `float_literal` | `0.0` -> `1.0`、`0.0` 以外の浮動小数点リテラル -> `0.0` |
-| `rune_literal` | `'a'` -> `'b'`、`'a'` 以外の rune リテラル -> `'a'` |
-| `unary_not` | `!x` -> `x` |
-| `unary_minus` | `-x` -> `x` |
-| `unary_bitwise_not` | `^x` -> `x` |
-| `string_literal` | `""` -> `"mutated"`、空でない文字列リテラル -> `""` |
+| 種類                    | 例                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------ |
+| `comparison_operator`   | `==` -> `!=`、`!=` -> `==`、`<` -> `<=`、`>` -> `>=`、`<=` -> `<`、`>=` -> `>` |
+| `logical_operator`      | `&&` -> `&#124;&#124;`、`&#124;&#124;` -> `&&`                                 |
+| `guard_clause`          | 単純な guard clause の return 差し替え                                         |
+| `arithmetic_operator`   | `+` -> `-`、`-` -> `+`、`*` -> `/`、`/` -> `*`、`%` -> `*`                     |
+| `bitwise_operator`      | `&` -> `&#124;`、`&#124;` -> `&`、`^` -> `&`、`&^` -> `&#124;`                 |
+| `shift_operator`        | `<<` -> `>>`、`>>` -> `<<`                                                     |
+| `assignment_arithmetic` | `+=` -> `-=`, `-=` -> `+=`, `*=` -> `/=`, `/=` -> `*=`, `%=` -> `*=`           |
+| `assignment_shift`      | `<<=` -> `>>=`、`>>=` -> `<<=`                                                 |
+| `assignment_bitwise`    | `&=` -> `&#124;=`、`&#124;=` -> `&=`、`^=` -> `&=`、`&^=` -> `&#124;=`         |
+| `inc_dec`               | `++` -> `--`、`--` -> `++`                                                     |
+| `control_flow`          | `switch x` の条件反転                                                          |
+| `return`                | `return true` -> `return false`、`return false` -> `return true`               |
+| `nil_check`             | `== nil` -> `!= nil`、`!= nil` -> `== nil`                                     |
+| `boolean_literal`       | `true` -> `false`、`false` -> `true`                                           |
+| `integer_literal`       | `0` -> `1`、0 以外の整数リテラル -> `0`                                        |
+| `float_literal`         | `0.0` -> `1.0`、`0.0` 以外の浮動小数点リテラル -> `0.0`                        |
+| `rune_literal`          | `'a'` -> `'b'`、`'a'` 以外の rune リテラル -> `'a'`                            |
+| `unary_not`             | `!x` -> `x`                                                                    |
+| `unary_minus`           | `-x` -> `x`                                                                    |
+| `unary_bitwise_not`     | `^x` -> `x`                                                                    |
+| `string_literal`        | `""` -> `"mutated"`、空でない文字列リテラル -> `""`                            |
 
 ## 前提条件
 

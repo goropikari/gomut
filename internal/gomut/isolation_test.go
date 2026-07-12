@@ -1,7 +1,8 @@
-package gomut
+package gomut_test
 
 import (
 	"context"
+	"gomut/internal/gomut"
 	"io"
 	"os"
 	"path/filepath"
@@ -21,7 +22,7 @@ func TestPrepareRunRoot(t *testing.T) {
 		require.NoError(t, os.WriteFile(filepath.Join(root, ".git", "HEAD"), []byte("ref: refs/heads/main\n"), 0o600))
 
 		// Act
-		runRoot, cleanup, err := prepareRunRoot(context.Background(), root, io.Discard)
+		runRoot, cleanup, err := gomut.PrepareRunRoot(context.Background(), root, io.Discard)
 
 		// Assert
 		require.NoError(t, err)
@@ -32,7 +33,7 @@ func TestPrepareRunRoot(t *testing.T) {
 		assert.Equal(t, "package main\n\nfunc main() {}\n", string(copied))
 
 		_, err = os.Stat(filepath.Join(runRoot, ".git"))
-		assert.ErrorIs(t, err, os.ErrNotExist)
+		require.ErrorIs(t, err, os.ErrNotExist)
 
 		require.NoError(t, os.WriteFile(filepath.Join(runRoot, "main.go"), []byte("package main\n\nvar mutated = true\n"), 0o600))
 
@@ -43,6 +44,6 @@ func TestPrepareRunRoot(t *testing.T) {
 		require.NoError(t, cleanup())
 
 		_, err = os.Stat(runRoot)
-		assert.ErrorIs(t, err, os.ErrNotExist)
+		require.ErrorIs(t, err, os.ErrNotExist)
 	})
 }
