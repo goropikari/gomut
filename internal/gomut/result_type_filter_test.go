@@ -1,0 +1,248 @@
+package gomut_test
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	gomut "gomut/internal/gomut"
+)
+
+func TestParseMutationResultFilter(t *testing.T) {
+	t.Run("given a lived filter, it allows lived results and rejects others", func(t *testing.T) {
+		// Arrange
+		filter, err := gomut.ParseMutationResultFilter([]string{"lived"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.True(t, filter.Matches(gomut.MutationResultLived))
+		assert.False(t, filter.Matches(gomut.MutationResultKilled))
+	})
+
+	t.Run("given repeated filter values, it allows each requested result", func(t *testing.T) {
+		// Arrange
+		filter, err := gomut.ParseMutationResultFilter([]string{"killed", "timed-out"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.True(t, filter.Matches(gomut.MutationResultKilled))
+		assert.True(t, filter.Matches(gomut.MutationResultTimedOut))
+		assert.False(t, filter.Matches(gomut.MutationResultLived))
+	})
+
+	t.Run("given space or underscore separated values, it normalizes them", func(t *testing.T) {
+		// Arrange
+		filter, err := gomut.ParseMutationResultFilter([]string{"not covered", "not_viable"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.True(t, filter.Matches(gomut.MutationResultNotCovered))
+		assert.True(t, filter.Matches(gomut.MutationResultNotViable))
+		assert.False(t, filter.Matches(gomut.MutationResultKilled))
+	})
+
+	t.Run("given an unknown filter value, it returns an error", func(t *testing.T) {
+		// Act
+		_, err := gomut.ParseMutationResultFilter([]string{"unknown"})
+
+		// Assert
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "unknown")
+	})
+}
+
+func TestCommandRunTypeFilter(t *testing.T) {
+	t.Run("given a single result type, it writes only matching records", func(t *testing.T) {
+		// Arrange
+		root := createResultFilterFixture(t)
+
+		// Act
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./sample", "--type", "not-covered"})
+
+		// Assert
+		require.NoError(t, err)
+
+		records := decodeJSONLRecords(t, stdout)
+		require.NotEmpty(t, records)
+
+		for _, record := range records {
+			assert.Equal(t, gomut.MutationResultNotCovered, record.Mutation.Result)
+		}
+
+		last := records[len(records)-1]
+		assert.Equal(t, len(records), last.Summary.Total)
+		assert.Equal(t, len(records), last.Summary.NotCovered)
+		assert.Zero(t, last.Summary.Killed)
+		assert.Zero(t, last.Summary.Lived)
+		assert.Zero(t, last.Summary.TimedOut)
+		assert.Zero(t, last.Summary.NotViable)
+		assert.Contains(t, stderr, "Mutation summary")
+		assert.Contains(t, stderr, "  killed: 0")
+		assert.Contains(t, stderr, "  lived: 0")
+		assert.Contains(t, stderr, "  not covered: ")
+		assert.Contains(t, stderr, "  timed out: 0")
+		assert.Contains(t, stderr, "  not viable: 0")
+	})
+
+	t.Run("given comma-separated result types, it writes only matching records", func(t *testing.T) {
+		// Arrange
+		root := createResultFilterFixture(t)
+
+		// Act
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./sample", "--type", "killed,lived"})
+
+		// Assert
+		require.NoError(t, err)
+
+		records := decodeJSONLRecords(t, stdout)
+		require.NotEmpty(t, records)
+
+		for _, record := range records {
+			assert.Contains(t, []gomut.MutationResult{gomut.MutationResultKilled, gomut.MutationResultLived}, record.Mutation.Result)
+		}
+
+		last := records[len(records)-1]
+		assert.Equal(t, len(records), last.Summary.Total)
+		assert.Zero(t, last.Summary.NotCovered)
+		assert.Zero(t, last.Summary.TimedOut)
+		assert.Zero(t, last.Summary.NotViable)
+		assert.Contains(t, stderr, "Mutation summary")
+		assert.Contains(t, stderr, "  killed: ")
+		assert.Contains(t, stderr, "  lived: ")
+		assert.Contains(t, stderr, "  not covered: 0")
+		assert.Contains(t, stderr, "  timed out: 0")
+		assert.Contains(t, stderr, "  not viable: 0")
+	})
+
+	t.Run("given repeated result type flags, it writes only matching records", func(t *testing.T) {
+		// Arrange
+		root := createResultFilterFixture(t)
+
+		// Act
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./sample", "--type", "killed", "--type", "timed-out"})
+
+		// Assert
+		require.NoError(t, err)
+
+		records := decodeJSONLRecords(t, stdout)
+		require.NotEmpty(t, records)
+
+		for _, record := range records {
+			assert.Contains(t, []gomut.MutationResult{gomut.MutationResultKilled, gomut.MutationResultTimedOut}, record.Mutation.Result)
+		}
+
+		last := records[len(records)-1]
+		assert.Equal(t, len(records), last.Summary.Total)
+		assert.Zero(t, last.Summary.Lived)
+		assert.Zero(t, last.Summary.NotCovered)
+		assert.Zero(t, last.Summary.NotViable)
+		assert.Contains(t, stderr, "Mutation summary")
+		assert.Contains(t, stderr, "  killed: ")
+		assert.Contains(t, stderr, "  lived: 0")
+		assert.Contains(t, stderr, "  not covered: 0")
+		assert.Contains(t, stderr, "  not viable: 0")
+	})
+
+	t.Run("given an unknown result type, it fails before writing output", func(t *testing.T) {
+		// Arrange
+		root := createResultFilterFixture(t)
+
+		// Act
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./sample", "--type", "unknown"})
+
+		// Assert
+		require.Error(t, err)
+		assert.Empty(t, stdout)
+		assert.Empty(t, stderr)
+		assert.Contains(t, err.Error(), "unknown")
+	})
+}
+
+func createResultFilterFixture(t *testing.T) string {
+	t.Helper()
+
+	root := t.TempDir()
+
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module example.com/filtertest\n\ngo 1.26\n"), 0o600))
+	require.NoError(t, os.MkdirAll(filepath.Join(root, "sample"), 0o755))
+
+	require.NoError(t, os.WriteFile(filepath.Join(root, "sample", "sample.go"), []byte(`package sample
+
+func IsAtLeast(age int) bool {
+	return age >= 18
+}
+
+func Add(a, b int) int {
+	return a + b
+}
+
+func Unused() bool {
+	return true
+}
+`), 0o600))
+
+	require.NoError(t, os.WriteFile(filepath.Join(root, "sample", "sample_test.go"), []byte(`package sample_test
+
+import (
+	"testing"
+
+	"example.com/filtertest/sample"
+)
+
+func TestIsAtLeast(t *testing.T) {
+	if !sample.IsAtLeast(20) {
+		t.Fatal("expected adult input to be accepted")
+	}
+}
+
+func TestAdd(t *testing.T) {
+	if got := sample.Add(1, 2); got != 3 {
+		t.Fatalf("expected sum to be 3, got %d", got)
+	}
+}
+`), 0o600))
+
+	return root
+}
+
+func runCommandInDir(t *testing.T, dir string, args []string) (string, string, error) {
+	t.Helper()
+
+	t.Chdir(dir)
+
+	var (
+		stdout bytes.Buffer
+		stderr bytes.Buffer
+	)
+
+	cmd := gomut.NewCommand(&stdout, &stderr)
+	err := cmd.Run(context.Background(), args)
+
+	return stdout.String(), stderr.String(), err
+}
+
+func decodeJSONLRecords(t *testing.T, output string) []gomut.Record {
+	t.Helper()
+
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	records := make([]gomut.Record, 0, len(lines))
+
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+
+		var record gomut.Record
+		require.NoError(t, json.Unmarshal([]byte(line), &record))
+		records = append(records, record)
+	}
+
+	return records
+}

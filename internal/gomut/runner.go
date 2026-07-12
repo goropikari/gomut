@@ -81,29 +81,29 @@ func (r *Runner) runCandidates(ctx context.Context, root string, cfg RunConfig, 
 	summary := Summary{}
 	startedAt := time.Now().Format(time.RFC3339)
 	command := strings.Join(os.Args, " ")
-	recordCount := 0
 
 	for _, candidate := range candidates {
-		summary.Total++
-
 		record, result, err := r.processCandidate(ctx, root, cfg, candidate, startedAt, command)
 		if err != nil {
 			return err
 		}
 
+		if !cfg.ResultFilter.Matches(result) {
+			continue
+		}
+
+		summary.Total++
 		summary = updateSummary(summary, result)
 		record.Summary = summary
-
-		recordCount++
 
 		if err := writeJSONL(output, record); err != nil {
 			return err
 		}
 	}
 
-	r.printSummary(summary, len(candidates))
+	r.printSummary(summary, summary.Total)
 
-	if recordCount == 0 {
+	if len(candidates) == 0 {
 		fmt.Fprintln(r.stderr, "No mutation candidates found.")
 	}
 

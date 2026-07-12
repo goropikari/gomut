@@ -64,6 +64,7 @@ gomut test --diff main
 ```bash
 gomut test --package ./internal/gomut --jsonl
 gomut test --package ./internal/gomut --jsonl mutations.jsonl
+gomut test --package ./internal/gomut --type lived --jsonl
 ```
 
 ## Output
@@ -72,6 +73,9 @@ gomut test --package ./internal/gomut --jsonl mutations.jsonl
 
 - `--jsonl` by itself writes to `stdout`
 - `--jsonl <path>` writes to the given file
+- `--type` filters emitted mutation results after execution
+- `--type` accepts single values, comma-separated values, and repeated flags
+- `--type` affects both JSONL output and the summary on `stderr`
 
 Summaries and auxiliary messages go to `stderr`.
 
@@ -104,6 +108,8 @@ The `result` field uses these values:
 - `NOT COVERED`
 - `TIMED OUT`
 - `NOT VIABLE`
+
+`--type` accepts these values in lower case, and also accepts hyphenated or space-separated forms such as `not-covered` and `timed-out`.
 
 ## Supported Mutations
 
