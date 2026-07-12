@@ -1,7 +1,8 @@
-package gomut
+package gomut_test
 
 import (
 	"context"
+	"gomut/internal/gomut"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,7 +26,7 @@ func TestPrepareWorktree(t *testing.T) {
 		runGit(t, root, "commit", "-m", "init")
 
 		// Act
-		worktreeRoot, cleanup, err := prepareWorktree(context.Background(), root)
+		worktreeRoot, cleanup, err := gomut.PrepareWorktree(context.Background(), root)
 
 		// Assert
 		require.NoError(t, err)

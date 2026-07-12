@@ -27,14 +27,9 @@ func (r *Runner) Run(ctx context.Context, cfg RunConfig) (err error) {
 		return err
 	}
 
-	cleanup := func() error { return nil }
-	if cfg.UseWorktree {
-		fmt.Fprintln(r.stderr, "Creating temporary git worktree...")
-		root, cleanup, err = prepareWorktree(ctx, root)
-		if err != nil {
-			return err
-		}
-		fmt.Fprintf(r.stderr, "Using temporary worktree: %s\n", root)
+	root, cleanup, err := prepareRunRoot(ctx, root, cfg.UseWorktree, r.stderr)
+	if err != nil {
+		return err
 	}
 
 	defer func() {
@@ -67,6 +62,23 @@ func (r *Runner) Run(ctx context.Context, cfg RunConfig) (err error) {
 	}
 
 	return r.runCandidates(ctx, root, cfg, candidates)
+}
+
+func prepareRunRoot(ctx context.Context, root string, useWorktree bool, stderr io.Writer) (string, func() error, error) {
+	if !useWorktree {
+		return root, nil, nil
+	}
+
+	fmt.Fprintln(stderr, "Creating temporary git worktree...")
+
+	worktreeRoot, cleanup, err := PrepareWorktree(ctx, root)
+	if err != nil {
+		return "", nil, err
+	}
+
+	fmt.Fprintf(stderr, "Using temporary worktree: %s\n", worktreeRoot)
+
+	return worktreeRoot, cleanup, nil
 }
 
 func (r *Runner) runCandidates(ctx context.Context, root string, cfg RunConfig, candidates []Candidate) error {
