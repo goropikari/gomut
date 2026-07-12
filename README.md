@@ -52,14 +52,32 @@ gomut test --package ./internal/gomut --jsonl mutations.jsonl
 
 主な結果値:
 
-- `KILLED`
-- `LIVED`
-- `NOT COVERED`
-- `TIMED OUT`
-- `NOT VIABLE`
+- `KILLED`: 変異後の `go test` が失敗した状態です。既存テストが変異を検出できています。
+- `LIVED`: 変異後の `go test` が成功した状態です。テストが変異を検出できていません。
+- `NOT COVERED`: baseline のカバレッジでその行が通っていない状態です。変異テスト自体は実行せず、この結果になります。
+- `TIMED OUT`: 変異後の `go test` がタイムアウトした状態です。
+- `NOT VIABLE`: 変異後のコードが構文エラーや型エラーなどで成立しない状態です。
 
-`LIVED` を拾いやすいように、各レコードには対象情報、集計情報、mutation 情報を含めています。
-mutation 情報には `original` と `replacement` も含まれます。
+各レコードには次の情報が入ります。
+
+- `target`: 実行対象
+- `summary`: ここまでの集計
+- `mutation`: 個別の mutation 結果
+
+`mutation` には `file`、`line`、`kind`、`original`、`replacement`、`result`、`message` が入ります。`message` には `go test` の結果や、実行できなかった理由が入ります。
+
+### Summary の読み方
+
+`summary` は、これまでに処理した mutation の集計です。
+
+- `total`: 処理した mutation の総数
+- `killed`: テストが mutation を検出できた数
+- `lived`: テストが mutation を検出できなかった数
+- `not_covered`: baseline のカバレッジ外だった数
+- `timed_out`: mutation 後のテストが時間切れになった数
+- `not_viable`: mutation 後のコードが成立しなかった数
+
+基本的には `killed` が多いほど良く、`lived` と `not_covered` が少ないほど良い状態です。`timed_out` と `not_viable` が多い場合は、テストや mutation 候補の見直しが必要です。
 
 ## Preconditions
 
@@ -86,14 +104,23 @@ mutation 情報には `original` と `replacement` も含まれます。
 | 算術演算子                        | `*` -> `/`                                                                        |
 | 算術演算子                        | `/` -> `*`                                                                        |
 | 算術演算子                        | `%` -> `*`                                                                        |
+| 代入演算子                        | `+=` -> `-=`                                                                      |
+| 代入演算子                        | `-=` -> `+=`                                                                      |
+| 代入演算子                        | `*=` -> `/=`                                                                      |
+| 代入演算子                        | `/=` -> `*=`                                                                      |
+| 代入演算子                        | `%=` -> `*=`                                                                      |
 | 代入演算子                        | `&=` -> `                                                                         |
 | 代入演算子                        | `                                                                                 |
 | 代入演算子                        | `^=` -> `&=`                                                                      |
 | 代入演算子                        | `&^=` -> `                                                                        |
+| インクリメント/デクリメント       | `++` -> `--`                                                                      |
+| インクリメント/デクリメント       | `--` -> `++`                                                                      |
 | return                            | `return true` -> `return false`                                                   |
 | return                            | `return false` -> `return true`                                                   |
 | nil チェック                      | `!= nil` -> `== nil`                                                              |
 | nil チェック                      | `== nil` -> `!= nil`                                                              |
+| boolean literal                   | `true` -> `false`                                                                 |
+| boolean literal                   | `false` -> `true`                                                                 |
 | guard clause の単純な return 変異 | `return x` の `x` を `nil` 以外の単純な識別子として扱い、別の return 値に差し替え |
 
 未実装のものは今後追加できます。
