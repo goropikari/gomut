@@ -7,12 +7,12 @@ export PATH := $(LOCAL_BIN):$(PATH)
 
 fmt:
 	GOCACHE=$(GOCACHE) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) golangci-lint fmt
-	GOCACHE=$(GOCACHE) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) golangci-lint run --fix
+	GOCACHE=$(GOCACHE) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) golangci-lint run --fix ./cmd/gomut ./internal/gomut
 	dprint fmt
 
 lint:
 	gitleaks detect --no-banner --redact --source .
-	GOCACHE=$(GOCACHE) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) golangci-lint run ./cmd/gomut ./internal/gomut ./sample
+	GOCACHE=$(GOCACHE) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) golangci-lint run ./cmd/gomut ./internal/gomut
 
 install:
 	go install ./cmd/gomut

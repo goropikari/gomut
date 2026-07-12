@@ -22,12 +22,12 @@ func NewRunner(stdout, stderr io.Writer) *Runner {
 }
 
 func (r *Runner) Run(ctx context.Context, cfg RunConfig) (err error) {
-	root, err := os.Getwd()
+	originalRoot, err := os.Getwd()
 	if err != nil {
 		return err
 	}
 
-	root, cleanup, err := prepareRunRoot(ctx, root, cfg.UseWorktree, r.stderr)
+	root, cleanup, err := prepareRunRoot(ctx, originalRoot, r.stderr)
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func (r *Runner) Run(ctx context.Context, cfg RunConfig) (err error) {
 		}
 	}()
 
-	packages, err := r.resolvePackages(ctx, root, cfg.Target)
+	packages, err := r.resolvePackages(ctx, originalRoot, root, cfg.Target)
 	if err != nil {
 		return fmt.Errorf("resolve packages: %w", err)
 	}
@@ -62,23 +62,6 @@ func (r *Runner) Run(ctx context.Context, cfg RunConfig) (err error) {
 	}
 
 	return r.runCandidates(ctx, root, cfg, candidates)
-}
-
-func prepareRunRoot(ctx context.Context, root string, useWorktree bool, stderr io.Writer) (string, func() error, error) {
-	if !useWorktree {
-		return root, nil, nil
-	}
-
-	fmt.Fprintln(stderr, "Creating temporary git worktree...")
-
-	worktreeRoot, cleanup, err := PrepareWorktree(ctx, root)
-	if err != nil {
-		return "", nil, err
-	}
-
-	fmt.Fprintf(stderr, "Using temporary worktree: %s\n", worktreeRoot)
-
-	return worktreeRoot, cleanup, nil
 }
 
 func (r *Runner) runCandidates(ctx context.Context, root string, cfg RunConfig, candidates []Candidate) error {
@@ -200,7 +183,7 @@ func (r *Runner) printSummary(summary Summary, total int) {
 	fmt.Fprintf(r.stderr, "  not viable: %d\n", summary.NotViable)
 }
 
-func (r *Runner) resolvePackages(ctx context.Context, root string, target Target) ([]string, error) {
+func (r *Runner) resolvePackages(ctx context.Context, originalRoot, root string, target Target) ([]string, error) {
 	switch target.Mode {
 	case TargetModePackage:
 		return []string{target.Value}, nil
@@ -212,7 +195,7 @@ func (r *Runner) resolvePackages(ctx context.Context, root string, target Target
 
 		return packages, nil
 	case TargetModeDiff:
-		files, err := diffFiles(ctx, root, target.Value)
+		files, err := diffFiles(ctx, originalRoot, target.Value)
 		if err != nil {
 			return nil, fmt.Errorf("collect diff files: %w", err)
 		}

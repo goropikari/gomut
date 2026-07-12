@@ -11,7 +11,7 @@
 - 単一の Go パッケージに対して mutation testing を実行
 - `--all` でリポジトリ内の全 Go パッケージを対象化
 - `--diff` で git 差分に含まれるファイルだけを走査
-- `--worktree` で一時的な git worktree 上で実行
+- 一時的なコピー上で安全に mutation testing を実行
 - AST から mutation 候補を検出
 - mutation ごとに `go test` を実行して結果を分類
 - 結果を JSON Lines 形式で出力
@@ -54,13 +54,9 @@ gomut test --all
 gomut test --diff HEAD~1..HEAD
 ```
 
-### worktree モード
+### 安全な実行
 
-```bash
-gomut test --package ./sample --worktree
-```
-
-`--worktree` は実行時に一時的な git worktree を作成します。
+`gomut` は各 mutation を一時ディレクトリ上のコピーで実行するため、途中で止まっても作業ツリーに変更が残りません。
 
 ### JSON Lines 出力
 
@@ -108,29 +104,29 @@ gomut test --package ./internal/gomut --jsonl mutations.jsonl
 
 現在対応している mutation 種別は次のとおりです。
 
-| 種類 | 例 |
-| --- | --- |
-| `comparison_operator` | `==` -> `!=`、`!=` -> `==`、`<` -> `<=`、`>` -> `>=`、`<=` -> `<`、`>=` -> `>` |
-| `logical_operator` | `&&` -> `&#124;&#124;`、`&#124;&#124;` -> `&&` |
-| `guard_clause` | 単純な guard clause の return 差し替え |
-| `arithmetic_operator` | `+` -> `-`、`-` -> `+`、`*` -> `/`、`/` -> `*`、`%` -> `*` |
-| `bitwise_operator` | `&` -> `&#124;`、`&#124;` -> `&`、`^` -> `&`、`&^` -> `&#124;` |
-| `shift_operator` | `<<` -> `>>`、`>>` -> `<<` |
-| `assignment_arithmetic` | `+=` -> `-=`, `-=` -> `+=`, `*=` -> `/=`, `/=` -> `*=`, `%=` -> `*=` |
-| `assignment_shift` | `<<=` -> `>>=`、`>>=` -> `<<=` |
-| `assignment_bitwise` | `&=` -> `&#124;=`、`&#124;=` -> `&=`、`^=` -> `&=`、`&^=` -> `&#124;=` |
-| `inc_dec` | `++` -> `--`、`--` -> `++` |
-| `control_flow` | `switch x` の条件反転 |
-| `return` | `return true` -> `return false`、`return false` -> `return true` |
-| `nil_check` | `== nil` -> `!= nil`、`!= nil` -> `== nil` |
-| `boolean_literal` | `true` -> `false`、`false` -> `true` |
-| `integer_literal` | `0` -> `1`、0 以外の整数リテラル -> `0` |
-| `float_literal` | `0.0` -> `1.0`、`0.0` 以外の浮動小数点リテラル -> `0.0` |
-| `rune_literal` | `'a'` -> `'b'`、`'a'` 以外の rune リテラル -> `'a'` |
-| `unary_not` | `!x` -> `x` |
-| `unary_minus` | `-x` -> `x` |
-| `unary_bitwise_not` | `^x` -> `x` |
-| `string_literal` | `""` -> `"mutated"`、空でない文字列リテラル -> `""` |
+| 種類                    | 例                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------ |
+| `comparison_operator`   | `==` -> `!=`、`!=` -> `==`、`<` -> `<=`、`>` -> `>=`、`<=` -> `<`、`>=` -> `>` |
+| `logical_operator`      | `&&` -> `&#124;&#124;`、`&#124;&#124;` -> `&&`                                 |
+| `guard_clause`          | 単純な guard clause の return 差し替え                                         |
+| `arithmetic_operator`   | `+` -> `-`、`-` -> `+`、`*` -> `/`、`/` -> `*`、`%` -> `*`                     |
+| `bitwise_operator`      | `&` -> `&#124;`、`&#124;` -> `&`、`^` -> `&`、`&^` -> `&#124;`                 |
+| `shift_operator`        | `<<` -> `>>`、`>>` -> `<<`                                                     |
+| `assignment_arithmetic` | `+=` -> `-=`, `-=` -> `+=`, `*=` -> `/=`, `/=` -> `*=`, `%=` -> `*=`           |
+| `assignment_shift`      | `<<=` -> `>>=`、`>>=` -> `<<=`                                                 |
+| `assignment_bitwise`    | `&=` -> `&#124;=`、`&#124;=` -> `&=`、`^=` -> `&=`、`&^=` -> `&#124;=`         |
+| `inc_dec`               | `++` -> `--`、`--` -> `++`                                                     |
+| `control_flow`          | `switch x` の条件反転                                                          |
+| `return`                | `return true` -> `return false`、`return false` -> `return true`               |
+| `nil_check`             | `== nil` -> `!= nil`、`!= nil` -> `== nil`                                     |
+| `boolean_literal`       | `true` -> `false`、`false` -> `true`                                           |
+| `integer_literal`       | `0` -> `1`、0 以外の整数リテラル -> `0`                                        |
+| `float_literal`         | `0.0` -> `1.0`、`0.0` 以外の浮動小数点リテラル -> `0.0`                        |
+| `rune_literal`          | `'a'` -> `'b'`、`'a'` 以外の rune リテラル -> `'a'`                            |
+| `unary_not`             | `!x` -> `x`                                                                    |
+| `unary_minus`           | `-x` -> `x`                                                                    |
+| `unary_bitwise_not`     | `^x` -> `x`                                                                    |
+| `string_literal`        | `""` -> `"mutated"`、空でない文字列リテラル -> `""`                            |
 
 ## 前提条件
 

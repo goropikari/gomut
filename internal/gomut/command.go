@@ -73,7 +73,6 @@ func (c *Command) newTestCommand() *cobra.Command {
 	flags.Duration("timeout", 10*time.Second, "timeout per mutation")
 	flags.String("jsonl", "", "jsonl output file path")
 	flags.Lookup("jsonl").NoOptDefVal = ""
-	flags.Bool("worktree", false, "run mutation testing in a temporary git worktree")
 
 	return cmd
 }
@@ -89,7 +88,6 @@ func (c *Command) runTest(cmd *cobra.Command, args []string) error {
 		diffRange, _   = cmd.Flags().GetString("diff")
 		timeout, _     = cmd.Flags().GetDuration("timeout")
 		jsonlOutput, _ = cmd.Flags().GetString("jsonl")
-		useWorktree, _ = cmd.Flags().GetBool("worktree")
 	)
 	if jsonlOutput == "" {
 		jsonlOutput = c.jsonlOutput
@@ -101,10 +99,9 @@ func (c *Command) runTest(cmd *cobra.Command, args []string) error {
 	}
 
 	cfg := RunConfig{
-		Target:      target,
-		Timeout:     timeout,
-		OutputPath:  jsonlOutput,
-		UseWorktree: useWorktree,
+		Target:     target,
+		Timeout:    timeout,
+		OutputPath: jsonlOutput,
 	}
 
 	runner := NewRunner(c.stdout, c.stderr)
