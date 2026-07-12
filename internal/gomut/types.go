@@ -111,5 +111,7 @@ type RunConfig struct {
 	Target       Target
 	Timeout      time.Duration
 	OutputPath   string
+	HTMLPath     string
+	HTMLEnabled  bool
 	ResultFilter MutationResultFilter
 }

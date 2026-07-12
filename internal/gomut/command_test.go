@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -92,32 +93,165 @@ func TestApplyMutation(t *testing.T) {
 func TestNormalizeTestArgs(t *testing.T) {
 	t.Run("given jsonl without a value, it keeps stdout output", func(t *testing.T) {
 		// Arrange
-		args, output, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--jsonl"})
+		args, jsonlOutput, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--jsonl"})
 
 		// Assert
 		require.NoError(t, err)
 		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
-		assert.Empty(t, output)
+		assert.Empty(t, jsonlOutput)
+		assert.Empty(t, htmlOutput)
+		assert.False(t, htmlEnabled)
 	})
 
 	t.Run("given jsonl with a value, it captures the file path", func(t *testing.T) {
 		// Arrange
-		args, output, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--jsonl", "mutations.jsonl"})
+		args, jsonlOutput, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--jsonl", "mutations.jsonl"})
 
 		// Assert
 		require.NoError(t, err)
 		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
-		assert.Equal(t, "mutations.jsonl", output)
+		assert.Equal(t, "mutations.jsonl", jsonlOutput)
+		assert.Empty(t, htmlOutput)
+		assert.False(t, htmlEnabled)
 	})
 
 	t.Run("given jsonl equals syntax, it captures the file path", func(t *testing.T) {
 		// Arrange
-		args, output, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--jsonl=mutations.jsonl"})
+		args, jsonlOutput, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--jsonl=mutations.jsonl"})
 
 		// Assert
 		require.NoError(t, err)
 		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
-		assert.Equal(t, "mutations.jsonl", output)
+		assert.Equal(t, "mutations.jsonl", jsonlOutput)
+		assert.Empty(t, htmlOutput)
+		assert.False(t, htmlEnabled)
+	})
+
+	t.Run("given html without a value, it keeps stdout output", func(t *testing.T) {
+		// Arrange
+		args, jsonlOutput, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--html"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
+		assert.Empty(t, jsonlOutput)
+		assert.Empty(t, htmlOutput)
+		assert.True(t, htmlEnabled)
+	})
+
+	t.Run("given html with a value, it captures the file path", func(t *testing.T) {
+		// Arrange
+		args, jsonlOutput, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--html", "report.html"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
+		assert.Empty(t, jsonlOutput)
+		assert.Equal(t, "report.html", htmlOutput)
+		assert.True(t, htmlEnabled)
+	})
+
+	t.Run("given both jsonl and html outputs, it captures both file paths", func(t *testing.T) {
+		// Arrange
+		args, jsonlOutput, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--jsonl", "mutations.jsonl", "--html", "report.html"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
+		assert.Equal(t, "mutations.jsonl", jsonlOutput)
+		assert.Equal(t, "report.html", htmlOutput)
+		assert.True(t, htmlEnabled)
+	})
+}
+
+func TestCommandRunHTMLOutput(t *testing.T) {
+	t.Run("given html output without a path, it writes html to stdout", func(t *testing.T) {
+		// Arrange
+		root := createResultFilterFixture(t)
+
+		// Act
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./sample", "--html"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Contains(t, strings.ToLower(stdout), "<!doctype html")
+		assert.Contains(t, strings.ToLower(stdout), "<html")
+		assert.Contains(t, stderr, "Mutation summary")
+	})
+
+	t.Run("given html output with a file path, it writes the report to that file", func(t *testing.T) {
+		// Arrange
+		root := createResultFilterFixture(t)
+		htmlPath := filepath.Join(root, "report.html")
+
+		// Act
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./sample", "--html", htmlPath})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Empty(t, stdout)
+		assert.Contains(t, stderr, "Mutation summary")
+
+		data, readErr := os.ReadFile(htmlPath)
+		require.NoError(t, readErr)
+		assert.Contains(t, strings.ToLower(string(data)), "<!doctype html")
+		assert.Contains(t, string(data), "sample.go")
+	})
+
+	t.Run("given jsonl and html output paths, it writes both outputs", func(t *testing.T) {
+		// Arrange
+		root := createResultFilterFixture(t)
+		jsonlPath := filepath.Join(root, "mutations.jsonl")
+		htmlPath := filepath.Join(root, "report.html")
+
+		// Act
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./sample", "--jsonl", jsonlPath, "--html", htmlPath})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Empty(t, stdout)
+		assert.Contains(t, stderr, "Mutation summary")
+
+		jsonlData, readJSONLErr := os.ReadFile(jsonlPath)
+		require.NoError(t, readJSONLErr)
+		assert.NotEmpty(t, decodeJSONLRecords(t, string(jsonlData)))
+
+		htmlData, readHTMLErr := os.ReadFile(htmlPath)
+		require.NoError(t, readHTMLErr)
+		assert.Contains(t, strings.ToLower(string(htmlData)), "<html")
+	})
+
+	t.Run("given a type filter and html output, it reflects the filtered results", func(t *testing.T) {
+		// Arrange
+		root := createResultFilterFixture(t)
+		htmlPath := filepath.Join(root, "filtered-report.html")
+
+		// Act
+		_, _, err := runCommandInDir(t, root, []string{"test", "--package", "./sample", "--type", "lived", "--html", htmlPath})
+
+		// Assert
+		require.NoError(t, err)
+
+		data, readErr := os.ReadFile(htmlPath)
+		require.NoError(t, readErr)
+		assert.Contains(t, strings.ToLower(string(data)), "<html")
+		assert.Contains(t, string(data), "LIVED")
+	})
+
+	t.Run("given an invalid html output path, it fails before creating the report", func(t *testing.T) {
+		// Arrange
+		root := createResultFilterFixture(t)
+		htmlPath := filepath.Join(root, "missing", "report.html")
+
+		// Act
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./sample", "--html", htmlPath})
+
+		// Assert
+		require.Error(t, err)
+		assert.Empty(t, stdout)
+		assert.NotEmpty(t, stderr)
+		_, statErr := os.Stat(htmlPath)
+		assert.Error(t, statErr)
 	})
 }
 

@@ -18,6 +18,8 @@ type Command struct {
 	stdout      io.Writer
 	stderr      io.Writer
 	jsonlOutput string
+	htmlOutput  string
+	htmlEnabled bool
 }
 
 func NewCommand(stdout, stderr io.Writer) *Command {
@@ -25,12 +27,14 @@ func NewCommand(stdout, stderr io.Writer) *Command {
 }
 
 func (c *Command) Run(ctx context.Context, args []string) error {
-	normalizedArgs, jsonlOutput, err := NormalizeTestArgs(args)
+	normalizedArgs, jsonlOutput, htmlOutput, htmlEnabled, err := NormalizeTestArgs(args)
 	if err != nil {
 		return err
 	}
 
 	c.jsonlOutput = jsonlOutput
+	c.htmlOutput = htmlOutput
+	c.htmlEnabled = htmlEnabled
 
 	root := c.newRootCommand()
 	root.SetOut(c.stdout)
@@ -74,6 +78,8 @@ func (c *Command) newTestCommand() *cobra.Command {
 	flags.Duration("timeout", 10*time.Second, "timeout per mutation")
 	flags.String("jsonl", "", "jsonl output file path")
 	flags.Lookup("jsonl").NoOptDefVal = ""
+	flags.String("html", "", "html output file path")
+	flags.Lookup("html").NoOptDefVal = ""
 
 	return cmd
 }
@@ -90,9 +96,13 @@ func (c *Command) runTest(cmd *cobra.Command, args []string) error {
 		resultTypes, _ = cmd.Flags().GetStringSlice("type")
 		timeout, _     = cmd.Flags().GetDuration("timeout")
 		jsonlOutput, _ = cmd.Flags().GetString("jsonl")
+		htmlOutput, _  = cmd.Flags().GetString("html")
 	)
 	if jsonlOutput == "" {
 		jsonlOutput = c.jsonlOutput
+	}
+	if htmlOutput == "" {
+		htmlOutput = c.htmlOutput
 	}
 
 	resultFilter, err := ParseMutationResultFilter(resultTypes)
@@ -109,6 +119,8 @@ func (c *Command) runTest(cmd *cobra.Command, args []string) error {
 		Target:       target,
 		Timeout:      timeout,
 		OutputPath:   jsonlOutput,
+		HTMLPath:     htmlOutput,
+		HTMLEnabled:  c.htmlEnabled || cmd.Flags().Changed("html"),
 		ResultFilter: resultFilter,
 	}
 
@@ -117,30 +129,46 @@ func (c *Command) runTest(cmd *cobra.Command, args []string) error {
 	return runner.Run(cmd.Context(), cfg)
 }
 
-func NormalizeTestArgs(args []string) ([]string, string, error) {
+func NormalizeTestArgs(args []string) ([]string, string, string, bool, error) {
 	normalized := make([]string, 0, len(args))
-	output := ""
+	jsonlOutput := ""
+	htmlOutput := ""
+	htmlEnabled := false
 
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		switch {
 		case arg == "--jsonl" || arg == "-jsonl":
 			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
-				output = args[i+1]
+				jsonlOutput = args[i+1]
 				i++
 			} else {
-				output = ""
+				jsonlOutput = ""
 			}
 		case strings.HasPrefix(arg, "--jsonl="):
-			output = strings.TrimPrefix(arg, "--jsonl=")
+			jsonlOutput = strings.TrimPrefix(arg, "--jsonl=")
 		case strings.HasPrefix(arg, "-jsonl="):
-			output = strings.TrimPrefix(arg, "-jsonl=")
+			jsonlOutput = strings.TrimPrefix(arg, "-jsonl=")
+		case arg == "--html" || arg == "-html":
+			htmlEnabled = true
+			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+				htmlOutput = args[i+1]
+				i++
+			} else {
+				htmlOutput = ""
+			}
+		case strings.HasPrefix(arg, "--html="):
+			htmlEnabled = true
+			htmlOutput = strings.TrimPrefix(arg, "--html=")
+		case strings.HasPrefix(arg, "-html="):
+			htmlEnabled = true
+			htmlOutput = strings.TrimPrefix(arg, "-html=")
 		default:
 			normalized = append(normalized, arg)
 		}
 	}
 
-	return normalized, output, nil
+	return normalized, jsonlOutput, htmlOutput, htmlEnabled, nil
 }
 
 func ResolveTarget(pkg string, all bool, diffRange string) (Target, error) {
