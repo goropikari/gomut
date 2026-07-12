@@ -140,6 +140,10 @@ progress: on
 parallel: 4
 jsonl: mutations.jsonl
 html: report.html
+exclude:
+  - "*.pb.go"
+  - "*_mock.go"
+  - internal/generated
 ```
 
 ## Output
@@ -156,6 +160,8 @@ By default, JSON Lines are written to `stdout`.
 - `--type` filters emitted mutation results after execution
 - `--type` accepts single values, comma-separated values, and repeated flags
 - `--type` affects both JSONL output and the summary on `stderr`
+- Excluded files and candidates are skipped before mutation generation
+- Exclusion reasons are printed to `stderr`
 
 Summaries and auxiliary messages go to `stderr`.
 
@@ -190,6 +196,24 @@ The `result` field uses these values:
 - `NOT VIABLE`
 
 `--type` accepts these values in lower case, and also accepts hyphenated or space-separated forms such as `not-covered` and `timed-out`.
+
+## Exclusions
+
+`gomut` supports multiple exclusion rules:
+
+- File patterns configured in `.gomut.yaml` with `exclude`
+- Function-level or line-level comments using `//gomut:ignore`
+
+File patterns are matched against repository-relative paths. A pattern can match a full path or a base name, so both of the following are valid:
+
+```yaml
+exclude:
+  - "*.pb.go"
+  - "*_mock.go"
+  - internal/generated
+```
+
+`//gomut:ignore` applies to the annotated function, statement, or block. When a candidate is excluded, `gomut` reports the reason on `stderr` so it is clear why the mutation did not run.
 
 ## Supported Mutations
 
