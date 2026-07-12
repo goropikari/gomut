@@ -58,4 +58,5 @@
 - 全体テスト: `go test ./...`
 - format: `make fmt`
 - lint: `make lint`
+- コードを編集したら `make fmt` と `make lint` でエラーが出ないことも確認する
 - 変更後は、必要なら `go run ./cmd/gomut test --package ./sample --jsonl` や `./gomut test --all` で挙動確認する
