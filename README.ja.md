@@ -11,7 +11,7 @@
 - 単一の Go パッケージに対して mutation testing を実行
 - `--all` でリポジトリ内の全 Go パッケージを対象化
 - `--diff` で git 差分に含まれるファイルだけを走査
-- `--worktree` で一時的な git worktree 上で実行
+- 一時的なコピー上で安全に mutation testing を実行
 - AST から mutation 候補を検出
 - mutation ごとに `go test` を実行して結果を分類
 - 結果を JSON Lines 形式で出力
@@ -54,13 +54,9 @@ gomut test --all
 gomut test --diff HEAD~1..HEAD
 ```
 
-### worktree モード
+### 安全な実行
 
-```bash
-gomut test --package ./sample --worktree
-```
-
-`--worktree` は実行時に一時的な git worktree を作成します。
+`gomut` は各 mutation を一時ディレクトリ上のコピーで実行するため、途中で止まっても作業ツリーに変更が残りません。
 
 ### JSON Lines 出力
 
