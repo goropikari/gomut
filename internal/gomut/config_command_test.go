@@ -35,7 +35,7 @@ func TestCommandRunConfig(t *testing.T) {
 		jsonlPath := filepath.Join(root, "explicit-config.jsonl")
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--config", filepath.Join("configs", "gomut.yml")})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--config", filepath.Join("configs", "gomut.yaml")})
 
 		// Assert
 		require.NoError(t, err)
@@ -81,7 +81,7 @@ func TestCommandRunConfig(t *testing.T) {
 	t.Run("given a malformed config file, it fails with a clear error", func(t *testing.T) {
 		// Arrange
 		root := createConfigFixture(t)
-		require.NoError(t, os.WriteFile(filepath.Join(root, ".gomut.yml"), []byte("target:\n  mode: [\n"), 0o600))
+		require.NoError(t, os.WriteFile(filepath.Join(root, ".gomut.yaml"), []byte("target:\n  mode: [\n"), 0o600))
 
 		// Act
 		stdout, stderr, err := runCommandInDir(t, root, []string{"test"})
@@ -105,13 +105,13 @@ func createConfigFixture(t *testing.T) string {
 	writeConfigFixturePackage(t, root, "alt")
 
 	require.NoError(t, os.MkdirAll(filepath.Join(root, "configs"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(root, ".gomut.yml"), []byte(`target:
+	require.NoError(t, os.WriteFile(filepath.Join(root, ".gomut.yaml"), []byte(`target:
   mode: package
   value: ./sample
 timeout: 10s
 jsonl: default-config.jsonl
 `), 0o600))
-	require.NoError(t, os.WriteFile(filepath.Join(root, "configs", "gomut.yml"), []byte(`target:
+	require.NoError(t, os.WriteFile(filepath.Join(root, "configs", "gomut.yaml"), []byte(`target:
   mode: package
   value: ./alt
 timeout: 20s

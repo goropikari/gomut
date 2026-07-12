@@ -28,7 +28,7 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("given a valid config file, it parses the supported fields", func(t *testing.T) {
 		// Arrange
 		dir := t.TempDir()
-		path := filepath.Join(dir, ".gomut.yml")
+		path := filepath.Join(dir, ".gomut.yaml")
 		require.NoError(t, os.WriteFile(path, []byte(`target:
   mode: package
   value: ./sample
@@ -76,7 +76,7 @@ baseline:
 	t.Run("given a malformed config file, it returns an error", func(t *testing.T) {
 		// Arrange
 		dir := t.TempDir()
-		path := filepath.Join(dir, ".gomut.yml")
+		path := filepath.Join(dir, ".gomut.yaml")
 		require.NoError(t, os.WriteFile(path, []byte("target:\n  mode: [\n"), 0o600))
 
 		// Act
@@ -84,6 +84,6 @@ baseline:
 
 		// Assert
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), ".gomut.yml")
+		assert.Contains(t, err.Error(), ".gomut.yaml")
 	})
 }

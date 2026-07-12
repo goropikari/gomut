@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const DefaultConfigFileName = ".gomut.yml"
+const DefaultConfigFileName = ".gomut.yaml"
 
 // Config represents gomut settings loaded from a YAML config file.
 type Config struct {

@@ -14,6 +14,7 @@ For the Japanese version, see [README.ja.md](README.ja.md).
 - Run mutation testing in an isolated temporary copy of the repository
 - Discover mutation candidates from the AST
 - Execute `go test` per mutation and classify the result
+- Configure a per-mutation timeout with `--timeout`
 - Emit results as JSON Lines
 - Generate an optional HTML report
 
@@ -75,6 +76,35 @@ gomut test --package ./sample --jsonl mutations.jsonl --html report.html
 gomut test --package ./sample --html
 gomut test --package ./sample --html report.html
 gomut test --package ./sample --jsonl mutations.jsonl --html report.html
+```
+
+### Timeout
+
+Each mutation run uses a per-mutation timeout. The default is `10s`.
+
+```bash
+gomut test --package ./sample --timeout 30s
+```
+
+You can also set the default in `.gomut.yaml`:
+
+```yaml
+timeout: 30s
+```
+
+CLI flags override config file values.
+
+### Config file
+
+`gomut` loads `.gomut.yaml` from the repository root by default. You can also point to a different file with `--config`.
+
+```yaml
+target:
+  mode: package
+  value: ./sample
+timeout: 30s
+jsonl: mutations.jsonl
+html: report.html
 ```
 
 ## Output

@@ -14,6 +14,7 @@
 - 一時的なコピー上で安全に mutation testing を実行
 - AST から mutation 候補を検出
 - mutation ごとに `go test` を実行して結果を分類
+- `--timeout` で mutation ごとのタイムアウトを設定
 - 結果を JSON Lines 形式で出力
 - HTML レポートを任意で生成
 
@@ -75,6 +76,35 @@ gomut test --package ./internal/gomut --jsonl mutations.jsonl --html report.html
 gomut test --package ./internal/gomut --html
 gomut test --package ./internal/gomut --html report.html
 gomut test --package ./internal/gomut --jsonl mutations.jsonl --html report.html
+```
+
+### タイムアウト
+
+各 mutation の実行には個別のタイムアウトがあり、デフォルトは `10s` です。
+
+```bash
+gomut test --package ./sample --timeout 30s
+```
+
+`.gomut.yaml` にも設定できます。
+
+```yaml
+timeout: 30s
+```
+
+CLI フラグは config ファイルの値より優先されます。
+
+### config ファイル
+
+`gomut` はデフォルトでリポジトリルートの `.gomut.yaml` を読みます。`--config` で別ファイルを指定することもできます。
+
+```yaml
+target:
+  mode: package
+  value: ./sample
+timeout: 30s
+jsonl: mutations.jsonl
+html: report.html
 ```
 
 ## 出力
