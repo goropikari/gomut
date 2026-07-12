@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:gomut:jsonl-record.schema.json",
+  "title": "gomut JSONL record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["target", "started_at", "command", "summary", "mutation"],
+  "properties": {
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "value"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["package", "all", "diff"]
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "started_at": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "string",
+          "const": ""
+        }
+      ]
+    },
+    "command": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "killed", "lived", "not_covered", "timed_out", "not_viable"],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "killed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lived": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "not_covered": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timed_out": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "not_viable": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "mutation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "line", "kind", "original", "replacement", "result", "message"],
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "comparison_operator",
+            "logical_operator",
+            "guard_clause",
+            "arithmetic_operator",
+            "bitwise_operator",
+            "shift_operator",
+            "assignment_arithmetic",
+            "assignment_shift",
+            "control_flow",
+            "assignment_bitwise",
+            "inc_dec",
+            "return",
+            "nil_check",
+            "boolean_literal",
+            "integer_literal",
+            "float_literal",
+            "rune_literal",
+            "unary_not",
+            "unary_minus",
+            "unary_bitwise_not",
+            "switch_condition",
+            "string_literal"
+          ]
+        },
+        "original": {
+          "type": "string"
+        },
+        "replacement": {
+          "type": "string"
+        },
+        "result": {
+          "type": "string",
+          "enum": ["KILLED", "LIVED", "NOT COVERED", "TIMED OUT", "NOT VIABLE"]
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

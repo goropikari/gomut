@@ -83,6 +83,10 @@ Each JSONL record contains:
 - `summary`
 - `mutation`
 
+See [docs/jsonl-record.schema.json](docs/jsonl-record.schema.json) for the JSON Schema.
+
+`started_at` is an RFC3339 timestamp in actual runs.
+
 `mutation` includes at least:
 
 - `file`

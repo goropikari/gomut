@@ -83,6 +83,10 @@ gomut test --package ./internal/gomut --jsonl mutations.jsonl
 - `summary`
 - `mutation`
 
+JSON Schema は [docs/jsonl-record.schema.json](docs/jsonl-record.schema.json) を参照してください。
+
+`started_at` は実際の実行では RFC3339 形式の時刻になります。
+
 `mutation` には少なくとも次が含まれます。
 
 - `file`
