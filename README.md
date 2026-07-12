@@ -20,12 +20,12 @@ go install ./cmd/gomut
 
 ## Dev Container
 
-`.devcontainer/devcontainer.json` を使うと、Go 1.26 環境に加えて `codex` CLI も入った状態で起動できます。
+`.devcontainer/devcontainer.json` を使うと、Go 1.26 環境で起動できます。開発用ツールは `make install-dev-tools` で入れます。
 
-初回起動時に `postCreateCommand` で公式インストールスクリプトを実行します。
+開発用ツールが必要なときは `make install-dev-tools` を実行してください。`codex`、`dprint`、`gitleaks` をまとめて入れます。
 
 ```bash
-curl -fsSL https://chatgpt.com/codex/install.sh | sh
+make install-dev-tools
 ```
 
 `~/.codex` 相当のデータは Docker volume に保持します。
