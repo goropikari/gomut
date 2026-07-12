@@ -16,7 +16,7 @@ type diffHunk struct {
 
 var diffState = map[string][]diffHunk{}
 
-func diffFiles(ctx context.Context, root, diffRange string) ([]string, error) {
+func DiffFiles(ctx context.Context, root, diffRange string) ([]string, error) {
 	normalizedRange, err := NormalizeDiffRange(ctx, root, diffRange)
 	if err != nil {
 		return nil, err

@@ -1,4 +1,4 @@
-package gomut
+package gomut_test
 
 import (
 	"context"
@@ -9,6 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	gomut "gomut/internal/gomut"
 )
 
 func TestNormalizeDiffRange(t *testing.T) {
@@ -34,7 +36,7 @@ func TestNormalizeDiffRange(t *testing.T) {
 		runGit(t, root, "checkout", "feature")
 
 		// Act
-		got, err := NormalizeDiffRange(context.Background(), root, "main")
+		got, err := gomut.NormalizeDiffRange(context.Background(), root, "main")
 
 		// Assert
 		require.NoError(t, err)
@@ -43,7 +45,7 @@ func TestNormalizeDiffRange(t *testing.T) {
 
 	t.Run("given an explicit range, it preserves the value", func(t *testing.T) {
 		// Arrange
-		got, err := NormalizeDiffRange(context.Background(), t.TempDir(), "HEAD~1..HEAD")
+		got, err := gomut.NormalizeDiffRange(context.Background(), t.TempDir(), "HEAD~1..HEAD")
 
 		// Assert
 		require.NoError(t, err)
@@ -68,13 +70,13 @@ func TestDiffFiles(t *testing.T) {
 		runGit(t, root, "commit", "-m", "update sample")
 
 		// Act
-		files, err := diffFiles(context.Background(), root, "HEAD~1..HEAD")
+		files, err := gomut.DiffFiles(context.Background(), root, "HEAD~1..HEAD")
 
 		// Assert
 		require.NoError(t, err)
 		require.Len(t, files, 1)
 		assert.Equal(t, filepath.ToSlash(filepath.Join("sample", "sample.go")), files[0])
-		assert.True(t, DiffLineAllowed(filepath.Join("sample", "sample.go"), 4))
+		assert.True(t, gomut.DiffLineAllowed(filepath.Join("sample", "sample.go"), 4))
 	})
 }
 
@@ -94,11 +96,11 @@ func TestDiscoverCandidatesWithDiffTarget(t *testing.T) {
 		runGit(t, root, "add", filepath.Join("sample", "sample.go"))
 		runGit(t, root, "commit", "-m", "update sample")
 
-		files, err := diffFiles(context.Background(), root, "HEAD~1..HEAD")
+		files, err := gomut.DiffFiles(context.Background(), root, "HEAD~1..HEAD")
 		require.NoError(t, err)
 
 		// Act
-		candidates, err := DiscoverCandidates(root, []string{"example.com/mut/sample"}, Target{Mode: TargetModeDiff, Value: "HEAD~1..HEAD"}, map[string]FileCoverage{})
+		candidates, err := gomut.DiscoverCandidates(root, []string{"example.com/mut/sample"}, gomut.Target{Mode: gomut.TargetModeDiff, Value: "HEAD~1..HEAD"}, map[string]gomut.FileCoverage{})
 
 		// Assert
 		require.NoError(t, err)

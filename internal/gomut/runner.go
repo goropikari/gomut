@@ -195,7 +195,7 @@ func (r *Runner) resolvePackages(ctx context.Context, originalRoot, root string,
 
 		return packages, nil
 	case TargetModeDiff:
-		files, err := diffFiles(ctx, originalRoot, target.Value)
+		files, err := DiffFiles(ctx, originalRoot, target.Value)
 		if err != nil {
 			return nil, fmt.Errorf("collect diff files: %w", err)
 		}
