@@ -33,6 +33,7 @@ func TestLoadConfig(t *testing.T) {
   mode: package
   value: ./sample
 timeout: 15s
+progress: on
 jsonl: mutations.jsonl
 html: report.html
 type:
@@ -57,6 +58,8 @@ baseline:
 		assert.Equal(t, "./sample", *cfg.Target.Value)
 		require.NotNil(t, cfg.Timeout)
 		assert.Equal(t, "15s", *cfg.Timeout)
+		require.NotNil(t, cfg.Progress)
+		assert.Equal(t, "on", *cfg.Progress)
 		require.NotNil(t, cfg.JSONL)
 		assert.Equal(t, "mutations.jsonl", *cfg.JSONL)
 		require.NotNil(t, cfg.HTML)

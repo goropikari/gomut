@@ -79,6 +79,7 @@ func (c *Command) newTestCommand() *cobra.Command {
 	flags.StringSlice("type", nil, "mutation result types to output")
 	flags.Duration("timeout", 10*time.Second, "timeout per mutation")
 	flags.String("config", "", "config file path")
+	flags.String("progress", string(ProgressModeAuto), "progress display mode: auto, on, or off")
 	flags.String("jsonl", "", "jsonl output file path")
 	flags.Lookup("jsonl").NoOptDefVal = ""
 	flags.String("html", "", "html output file path")
@@ -126,19 +127,21 @@ func (c *Command) loadTestConfig(cmd *cobra.Command) (Config, error) {
 }
 
 type testRunInputs struct {
-	pkgTarget      string
-	allTarget      bool
-	diffRange      string
-	resultTypes    []string
-	timeout        time.Duration
-	jsonlOutput    string
-	jsonlEnabled   bool
-	htmlOutput     string
-	htmlEnabled    bool
-	targetChanged  bool
-	typeChanged    bool
-	timeoutChanged bool
-	config         Config
+	pkgTarget       string
+	allTarget       bool
+	diffRange       string
+	resultTypes     []string
+	timeout         time.Duration
+	progressMode    string
+	progressChanged bool
+	jsonlOutput     string
+	jsonlEnabled    bool
+	htmlOutput      string
+	htmlEnabled     bool
+	targetChanged   bool
+	typeChanged     bool
+	timeoutChanged  bool
+	config          Config
 }
 
 func (c *Command) buildTestRunConfig(cmd *cobra.Command) (RunConfig, error) {
@@ -161,6 +164,11 @@ func (c *Command) buildTestRunConfig(cmd *cobra.Command) (RunConfig, error) {
 		return RunConfig{}, err
 	}
 
+	progressMode, err := parseProgressMode(inputs.progressMode)
+	if err != nil {
+		return RunConfig{}, err
+	}
+
 	return RunConfig{
 		Target:       target,
 		Timeout:      inputs.timeout,
@@ -168,6 +176,7 @@ func (c *Command) buildTestRunConfig(cmd *cobra.Command) (RunConfig, error) {
 		JSONLEnabled: inputs.jsonlEnabled,
 		HTMLPath:     inputs.htmlOutput,
 		HTMLEnabled:  inputs.htmlEnabled,
+		ProgressMode: progressMode,
 		ResultFilter: resultFilter,
 	}, nil
 }
@@ -183,21 +192,24 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command) (testRunInputs, error) {
 	allTarget, _ := cmd.Flags().GetBool("all")
 	diffRange, _ := cmd.Flags().GetString("diff")
 	resultTypes, _ := cmd.Flags().GetStringSlice("type")
+	progressMode, _ := cmd.Flags().GetString("progress")
 
 	return testRunInputs{
-		pkgTarget:      pkgTarget,
-		allTarget:      allTarget,
-		diffRange:      diffRange,
-		resultTypes:    append([]string(nil), resultTypes...),
-		timeout:        timeout,
-		jsonlOutput:    c.jsonlOutput,
-		jsonlEnabled:   c.jsonlEnabled,
-		htmlOutput:     c.htmlOutput,
-		htmlEnabled:    c.htmlEnabled,
-		targetChanged:  cmd.Flags().Changed("package") || cmd.Flags().Changed("all") || cmd.Flags().Changed("diff"),
-		typeChanged:    cmd.Flags().Changed("type"),
-		timeoutChanged: cmd.Flags().Changed("timeout"),
-		config:         config,
+		pkgTarget:       pkgTarget,
+		allTarget:       allTarget,
+		diffRange:       diffRange,
+		resultTypes:     append([]string(nil), resultTypes...),
+		timeout:         timeout,
+		progressMode:    progressMode,
+		progressChanged: cmd.Flags().Changed("progress"),
+		jsonlOutput:     c.jsonlOutput,
+		jsonlEnabled:    c.jsonlEnabled,
+		htmlOutput:      c.htmlOutput,
+		htmlEnabled:     c.htmlEnabled,
+		targetChanged:   cmd.Flags().Changed("package") || cmd.Flags().Changed("all") || cmd.Flags().Changed("diff"),
+		typeChanged:     cmd.Flags().Changed("type"),
+		timeoutChanged:  cmd.Flags().Changed("timeout"),
+		config:          config,
 	}, nil
 }
 
@@ -211,6 +223,8 @@ func (c *Command) applyTestConfigDefaults(inputs *testRunInputs) error {
 	if err := c.applyTimeoutConfigDefaults(inputs); err != nil {
 		return err
 	}
+
+	c.applyProgressConfigDefaults(inputs)
 
 	c.applyOutputConfigDefaults(inputs)
 
@@ -246,6 +260,14 @@ func (c *Command) applyTimeoutConfigDefaults(inputs *testRunInputs) error {
 	inputs.timeout = timeout
 
 	return nil
+}
+
+func (c *Command) applyProgressConfigDefaults(inputs *testRunInputs) {
+	if inputs.progressChanged || inputs.config.Progress == nil {
+		return
+	}
+
+	inputs.progressMode = *inputs.config.Progress
 }
 
 func (c *Command) applyOutputConfigDefaults(inputs *testRunInputs) {
@@ -285,6 +307,19 @@ func configDiffRange(value *string) string {
 	}
 
 	return "HEAD"
+}
+
+func parseProgressMode(value string) (ProgressMode, error) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", string(ProgressModeAuto):
+		return ProgressModeAuto, nil
+	case string(ProgressModeOn):
+		return ProgressModeOn, nil
+	case string(ProgressModeOff):
+		return ProgressModeOff, nil
+	default:
+		return "", fmt.Errorf("unknown progress mode: %s", value)
+	}
 }
 
 func NormalizeTestArgs(args []string) ([]string, string, bool, string, bool, error) {

@@ -22,6 +22,7 @@ func TestCommandRunConfig(t *testing.T) {
 		// Assert
 		require.NoError(t, err)
 		assert.Empty(t, stdout)
+		assert.Contains(t, stderr, "Progress")
 		assert.Contains(t, stderr, "Mutation summary")
 
 		records := decodeJSONLRecords(t, mustReadFile(t, jsonlPath))
@@ -63,6 +64,25 @@ func TestCommandRunConfig(t *testing.T) {
 		records := decodeJSONLRecords(t, mustReadFile(t, jsonlPath))
 		require.NotEmpty(t, records)
 		assert.Equal(t, "./alt", records[0].Target.Value)
+	})
+
+	t.Run("given config progress and an explicit progress flag, it uses the flag", func(t *testing.T) {
+		// Arrange
+		root := createConfigFixture(t)
+		jsonlPath := filepath.Join(root, "progress-override.jsonl")
+
+		// Act
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./sample", "--jsonl", jsonlPath, "--progress=off"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Empty(t, stdout)
+		assert.NotContains(t, stderr, "Progress")
+		assert.Contains(t, stderr, "Mutation summary")
+
+		records := decodeJSONLRecords(t, mustReadFile(t, jsonlPath))
+		require.NotEmpty(t, records)
+		assert.Equal(t, "./sample", records[0].Target.Value)
 	})
 
 	t.Run("given no config file, it still runs with CLI flags", func(t *testing.T) {
@@ -109,12 +129,14 @@ func createConfigFixture(t *testing.T) string {
   mode: package
   value: ./sample
 timeout: 10s
+progress: on
 jsonl: default-config.jsonl
 `), 0o600))
 	require.NoError(t, os.WriteFile(filepath.Join(root, "configs", "gomut.yaml"), []byte(`target:
   mode: package
   value: ./alt
 timeout: 20s
+progress: off
 jsonl: explicit-config.jsonl
 `), 0o600))
 

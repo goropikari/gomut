@@ -15,6 +15,7 @@
 - AST から mutation 候補を検出
 - mutation ごとに `go test` を実行して結果を分類
 - `--timeout` で mutation ごとのタイムアウトを設定
+- `--progress` で進捗表示を制御
 - 結果を JSON Lines 形式で出力
 - HTML レポートを任意で生成
 
@@ -94,6 +95,25 @@ timeout: 30s
 
 CLI フラグは config ファイルの値より優先されます。
 
+### progress
+
+`--progress=auto|on|off` で mutation の進捗表示を `stderr` に出すか制御できます。
+
+```bash
+gomut test --package ./sample --jsonl mutations.jsonl --progress=on
+```
+
+`auto` が既定値です。対話的な端末では進捗を表示し、非 TTY や CI では静かに動作します。
+進捗を見やすくしたい場合は、JSONL を `stdout` ではなくファイルに出してください。
+
+`.gomut.yaml` にも設定できます。
+
+```yaml
+progress: on
+```
+
+CLI フラグは config ファイルの値より優先されます。
+
 ### config ファイル
 
 `gomut` はデフォルトでリポジトリルートの `.gomut.yaml` を読みます。`--config` で別ファイルを指定することもできます。
@@ -103,6 +123,7 @@ target:
   mode: package
   value: ./sample
 timeout: 30s
+progress: on
 jsonl: mutations.jsonl
 html: report.html
 ```
@@ -116,6 +137,8 @@ JSON Lines はデフォルトで `stdout` に出ます。
 - `--html` だけを指定した場合は HTML レポートを `stdout` に出力
 - `--html <path>` を指定した場合はそのファイルに出力
 - `--html <path>` を指定して `--jsonl` を付けない場合、JSONL 出力は抑止される
+- `--progress=auto|on|off` で mutation の進捗表示を `stderr` に出すか制御できる
+- `--progress` の既定値は `auto` で、対話的な端末では進捗を表示し、非 TTY や CI では静かに動作する
 - `--type` は mutation 実行後の結果を絞り込む
 - `--type` は単一指定、カンマ区切り、繰り返し指定に対応する
 - `--type` は JSONL 出力と `stderr` の summary の両方に反映される
