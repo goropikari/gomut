@@ -16,6 +16,7 @@ const DefaultConfigFileName = ".gomut.yaml"
 type Config struct {
 	Target   *ConfigTarget   `yaml:"target,omitempty"`
 	Timeout  *string         `yaml:"timeout,omitempty"`
+	Progress *string         `yaml:"progress,omitempty"`
 	JSONL    *string         `yaml:"jsonl,omitempty"`
 	HTML     *string         `yaml:"html,omitempty"`
 	Type     []string        `yaml:"type,omitempty"`

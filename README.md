@@ -15,6 +15,7 @@ For the Japanese version, see [README.ja.md](README.ja.md).
 - Discover mutation candidates from the AST
 - Execute `go test` per mutation and classify the result
 - Configure a per-mutation timeout with `--timeout`
+- Control progress reporting with `--progress`
 - Emit results as JSON Lines
 - Generate an optional HTML report
 
@@ -94,6 +95,25 @@ timeout: 30s
 
 CLI flags override config file values.
 
+### Progress
+
+Progress reporting is controlled with `--progress=auto|on|off`.
+
+```bash
+gomut test --package ./sample --jsonl mutations.jsonl --progress=on
+```
+
+`auto` is the default. It shows progress in interactive terminals and stays quiet in non-TTY and CI runs.
+If you want to watch progress comfortably, send JSONL to a file instead of `stdout`.
+
+You can also set the default in `.gomut.yaml`:
+
+```yaml
+progress: on
+```
+
+CLI flags override config file values.
+
 ### Config file
 
 `gomut` loads `.gomut.yaml` from the repository root by default. You can also point to a different file with `--config`.
@@ -103,6 +123,7 @@ target:
   mode: package
   value: ./sample
 timeout: 30s
+progress: on
 jsonl: mutations.jsonl
 html: report.html
 ```

@@ -127,20 +127,21 @@ func (c *Command) loadTestConfig(cmd *cobra.Command) (Config, error) {
 }
 
 type testRunInputs struct {
-	pkgTarget      string
-	allTarget      bool
-	diffRange      string
-	resultTypes    []string
-	timeout        time.Duration
-	progressMode   string
-	jsonlOutput    string
-	jsonlEnabled   bool
-	htmlOutput     string
-	htmlEnabled    bool
-	targetChanged  bool
-	typeChanged    bool
-	timeoutChanged bool
-	config         Config
+	pkgTarget       string
+	allTarget       bool
+	diffRange       string
+	resultTypes     []string
+	timeout         time.Duration
+	progressMode    string
+	progressChanged bool
+	jsonlOutput     string
+	jsonlEnabled    bool
+	htmlOutput      string
+	htmlEnabled     bool
+	targetChanged   bool
+	typeChanged     bool
+	timeoutChanged  bool
+	config          Config
 }
 
 func (c *Command) buildTestRunConfig(cmd *cobra.Command) (RunConfig, error) {
@@ -194,20 +195,21 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command) (testRunInputs, error) {
 	progressMode, _ := cmd.Flags().GetString("progress")
 
 	return testRunInputs{
-		pkgTarget:      pkgTarget,
-		allTarget:      allTarget,
-		diffRange:      diffRange,
-		resultTypes:    append([]string(nil), resultTypes...),
-		timeout:        timeout,
-		progressMode:   progressMode,
-		jsonlOutput:    c.jsonlOutput,
-		jsonlEnabled:   c.jsonlEnabled,
-		htmlOutput:     c.htmlOutput,
-		htmlEnabled:    c.htmlEnabled,
-		targetChanged:  cmd.Flags().Changed("package") || cmd.Flags().Changed("all") || cmd.Flags().Changed("diff"),
-		typeChanged:    cmd.Flags().Changed("type"),
-		timeoutChanged: cmd.Flags().Changed("timeout"),
-		config:         config,
+		pkgTarget:       pkgTarget,
+		allTarget:       allTarget,
+		diffRange:       diffRange,
+		resultTypes:     append([]string(nil), resultTypes...),
+		timeout:         timeout,
+		progressMode:    progressMode,
+		progressChanged: cmd.Flags().Changed("progress"),
+		jsonlOutput:     c.jsonlOutput,
+		jsonlEnabled:    c.jsonlEnabled,
+		htmlOutput:      c.htmlOutput,
+		htmlEnabled:     c.htmlEnabled,
+		targetChanged:   cmd.Flags().Changed("package") || cmd.Flags().Changed("all") || cmd.Flags().Changed("diff"),
+		typeChanged:     cmd.Flags().Changed("type"),
+		timeoutChanged:  cmd.Flags().Changed("timeout"),
+		config:          config,
 	}, nil
 }
 
@@ -221,6 +223,8 @@ func (c *Command) applyTestConfigDefaults(inputs *testRunInputs) error {
 	if err := c.applyTimeoutConfigDefaults(inputs); err != nil {
 		return err
 	}
+
+	c.applyProgressConfigDefaults(inputs)
 
 	c.applyOutputConfigDefaults(inputs)
 
@@ -256,6 +260,14 @@ func (c *Command) applyTimeoutConfigDefaults(inputs *testRunInputs) error {
 	inputs.timeout = timeout
 
 	return nil
+}
+
+func (c *Command) applyProgressConfigDefaults(inputs *testRunInputs) {
+	if inputs.progressChanged || inputs.config.Progress == nil {
+		return
+	}
+
+	inputs.progressMode = *inputs.config.Progress
 }
 
 func (c *Command) applyOutputConfigDefaults(inputs *testRunInputs) {
