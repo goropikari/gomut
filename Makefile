@@ -3,7 +3,8 @@
 GOCACHE ?= /tmp/gomut-gocache
 GOLANGCI_LINT_CACHE ?= /tmp/golangci-lint
 LOCAL_BIN ?= $(HOME)/.local/bin
-export PATH := $(LOCAL_BIN):$(PATH)
+DPRINT_INSTALL ?= $(HOME)/.dprint
+export PATH := $(DPRINT_INSTALL)/bin:$(LOCAL_BIN):$(PATH)
 
 fmt:
 	GOCACHE=$(GOCACHE) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) golangci-lint fmt
@@ -26,7 +27,7 @@ install-codex:
 
 install-dprint:
 	@set -eu; \
-	mkdir -p '$(LOCAL_BIN)'; \
+	mkdir -p '$(DPRINT_INSTALL)/bin'; \
 	if ! command -v dprint >/dev/null 2>&1; then \
 		curl -fsSL https://dprint.dev/install.sh | sh; \
 	fi
