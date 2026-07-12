@@ -118,8 +118,10 @@ type Result struct {
 }
 
 type RunConfig struct {
-	Target       Target
-	Timeout      time.Duration
+	Target  Target
+	Timeout time.Duration
+	// Parallel controls how many mutation workers the runner may use.
+	Parallel     int
 	OutputPath   string
 	JSONLEnabled bool
 	HTMLPath     string

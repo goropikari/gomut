@@ -16,6 +16,7 @@ For the Japanese version, see [README.ja.md](README.ja.md).
 - Run against all Go packages in a repository with `--all`
 - Scan only the files touched by a git diff with `--diff`
 - Run mutation testing in an isolated temporary copy of the repository
+- Run mutations in parallel with `--parallel`
 - Discover mutation candidates from the AST
 - Execute `go test` per mutation and classify the result
 - Configure a per-mutation timeout with `--timeout`
@@ -65,6 +66,14 @@ gomut test --diff main
 ### Isolated execution
 
 `gomut` runs each mutation in a temporary copy of the repository, so the working tree remains clean even if the process stops early.
+
+### Parallel execution
+
+`gomut` can run mutation candidates in parallel with `--parallel <n>`.
+
+- The default worker count is the number of CPU cores.
+- Set `--parallel 1` to keep sequential behavior.
+- Workers use isolated temporary copies, and results are collected before output is written, so JSONL stays valid.
 
 ### JSON Lines output
 
@@ -128,6 +137,7 @@ target:
   value: ./sample
 timeout: 30s
 progress: on
+parallel: 4
 jsonl: mutations.jsonl
 html: report.html
 ```

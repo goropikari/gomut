@@ -9,12 +9,21 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
 type Runner struct {
-	stdout io.Writer
-	stderr io.Writer
+	stdout              io.Writer
+	stderr              io.Writer
+	executeMutationFunc func(ctx context.Context, root string, candidate Candidate, timeout time.Duration) (MutationResult, string, error)
+}
+
+type candidateOutcome struct {
+	index    int
+	record   Record
+	result   MutationResult
+	included bool
 }
 
 func NewRunner(stdout, stderr io.Writer) *Runner {
@@ -189,6 +198,14 @@ func chainCleanup(existing, next func()) func() {
 }
 
 func (r *Runner) runCandidateLoop(ctx context.Context, root string, cfg RunConfig, candidates []Candidate, startedAt, command string, jsonlWriter io.Writer, progress ProgressReporter) (Summary, []Record, error) {
+	if cfg.Parallel > 1 && len(candidates) > 1 {
+		return r.runCandidateLoopParallel(ctx, root, cfg, candidates, startedAt, command, jsonlWriter, progress)
+	}
+
+	return r.runCandidateLoopSequential(ctx, root, cfg, candidates, startedAt, command, jsonlWriter, progress)
+}
+
+func (r *Runner) runCandidateLoopSequential(ctx context.Context, root string, cfg RunConfig, candidates []Candidate, startedAt, command string, jsonlWriter io.Writer, progress ProgressReporter) (Summary, []Record, error) {
 	summary := Summary{}
 	records := make([]Record, 0, len(candidates))
 	completed := 0
@@ -196,7 +213,10 @@ func (r *Runner) runCandidateLoop(ctx context.Context, root string, cfg RunConfi
 	for _, candidate := range candidates {
 		record, result, err := r.processCandidate(ctx, root, cfg, candidate, startedAt, command)
 		if err != nil {
-			return Summary{}, nil, err
+			r.reportCandidateError(candidate, err)
+
+			result = MutationResultNotViable
+			record = r.buildRecord(cfg.Target, startedAt, command, candidate, result, err.Error())
 		}
 
 		completed++
@@ -219,6 +239,165 @@ func (r *Runner) runCandidateLoop(ctx context.Context, root string, cfg RunConfi
 	}
 
 	return summary, records, nil
+}
+
+func (r *Runner) runCandidateLoopParallel(ctx context.Context, root string, cfg RunConfig, candidates []Candidate, startedAt, command string, jsonlWriter io.Writer, progress ProgressReporter) (Summary, []Record, error) {
+	workerCount := normalizeParallelWorkerCount(cfg.Parallel, len(candidates))
+
+	ordered, err := r.collectParallelCandidateOutcomes(ctx, root, cfg, candidates, startedAt, command, workerCount, progress)
+	if err != nil {
+		return Summary{}, nil, err
+	}
+
+	return r.finalizeParallelCandidateOutcomes(jsonlWriter, ordered)
+}
+
+func normalizeParallelWorkerCount(value, total int) int {
+	if value <= 0 {
+		value = 1
+	}
+
+	if value > total {
+		return total
+	}
+
+	return value
+}
+
+func (r *Runner) collectParallelCandidateOutcomes(ctx context.Context, root string, cfg RunConfig, candidates []Candidate, startedAt, command string, workerCount int, progress ProgressReporter) ([]candidateOutcome, error) {
+	jobs := make(chan int)
+	results := make(chan candidateOutcome, len(candidates))
+
+	var wg sync.WaitGroup
+
+	workerRoots := make([]string, 0, workerCount)
+	workerCleanups := make([]func() error, 0, workerCount)
+
+	for i := 0; i < workerCount; i++ {
+		workerRoot, cleanup, err := prepareMutationRoot(ctx, root)
+		if err != nil {
+			for _, workerCleanup := range workerCleanups {
+				_ = workerCleanup()
+			}
+
+			return nil, err
+		}
+
+		workerRoots = append(workerRoots, workerRoot)
+		workerCleanups = append(workerCleanups, cleanup)
+	}
+
+	defer func() {
+		for _, workerCleanup := range workerCleanups {
+			_ = workerCleanup()
+		}
+	}()
+
+	for i := 0; i < workerCount; i++ {
+		wg.Add(1)
+		go r.runParallelCandidateWorker(ctx, workerRoots[i], cfg, candidates, startedAt, command, jobs, results, &wg)
+	}
+
+	go func() {
+		for index := range candidates {
+			jobs <- index
+		}
+
+		close(jobs)
+		wg.Wait()
+		close(results)
+	}()
+
+	ordered := make([]candidateOutcome, len(candidates))
+	completed := 0
+
+	for outcome := range results {
+		ordered[outcome.index] = outcome
+		completed++
+		progress.Update(completed)
+	}
+
+	return ordered, nil
+}
+
+func (r *Runner) runParallelCandidateWorker(ctx context.Context, root string, cfg RunConfig, candidates []Candidate, startedAt, command string, jobs <-chan int, results chan<- candidateOutcome, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	for index := range jobs {
+		results <- r.parallelCandidateOutcome(ctx, root, cfg, candidates[index], index, startedAt, command)
+	}
+}
+
+func (r *Runner) parallelCandidateOutcome(ctx context.Context, root string, cfg RunConfig, candidate Candidate, index int, startedAt, command string) candidateOutcome {
+	if !candidate.Covered {
+		record := r.buildRecord(cfg.Target, startedAt, command, candidate, MutationResultNotCovered, "line not covered by baseline tests")
+
+		return candidateOutcome{
+			index:    index,
+			record:   record,
+			result:   MutationResultNotCovered,
+			included: cfg.ResultFilter.Matches(MutationResultNotCovered),
+		}
+	}
+
+	record, result, err := r.processCandidateInRoot(ctx, root, cfg, candidate, startedAt, command)
+	if err != nil {
+		r.reportCandidateError(candidate, err)
+
+		result = MutationResultNotViable
+		record = r.buildRecord(cfg.Target, startedAt, command, candidate, result, err.Error())
+	}
+
+	return candidateOutcome{
+		index:    index,
+		record:   record,
+		result:   result,
+		included: cfg.ResultFilter.Matches(result),
+	}
+}
+
+func (r *Runner) processCandidateInRoot(ctx context.Context, root string, cfg RunConfig, candidate Candidate, startedAt, command string) (Record, MutationResult, error) {
+	result, message, err := r.executeMutation(ctx, root, candidate, cfg.Timeout)
+	if err != nil {
+		return Record{}, "", err
+	}
+
+	record := r.buildRecord(cfg.Target, startedAt, command, candidate, result, message)
+
+	return record, result, nil
+}
+
+func (r *Runner) finalizeParallelCandidateOutcomes(jsonlWriter io.Writer, ordered []candidateOutcome) (Summary, []Record, error) {
+	summary := Summary{}
+	records := make([]Record, 0, len(ordered))
+
+	for i := range ordered {
+		outcome := ordered[i]
+		if !outcome.included {
+			continue
+		}
+
+		summary.Total++
+		summary = updateSummary(summary, outcome.result)
+		outcome.record.Summary = summary
+		records = append(records, outcome.record)
+
+		if jsonlWriter != nil {
+			if err := writeJSONL(jsonlWriter, outcome.record); err != nil {
+				return Summary{}, nil, err
+			}
+		}
+	}
+
+	return summary, records, nil
+}
+
+func (r *Runner) reportCandidateError(candidate Candidate, err error) {
+	if r.stderr == nil {
+		return
+	}
+
+	fmt.Fprintf(r.stderr, "mutation execution error for %s:%d: %v\n", candidate.File, candidate.Line, err)
 }
 
 func (r *Runner) writeCandidateHTML(root string, cfg RunConfig, htmlWriter io.Writer, startedAt, command string, summary Summary, records []Record) error {
@@ -255,14 +434,15 @@ func (r *Runner) processCandidate(ctx context.Context, root string, cfg RunConfi
 		return record, MutationResultNotCovered, nil
 	}
 
-	result, message, err := r.executeMutation(ctx, root, candidate, cfg.Timeout)
+	candidateRoot, cleanup, err := prepareMutationRoot(ctx, root)
 	if err != nil {
 		return Record{}, "", err
 	}
+	defer func() {
+		_ = cleanup()
+	}()
 
-	record := r.buildRecord(cfg.Target, startedAt, command, candidate, result, message)
-
-	return record, result, nil
+	return r.processCandidateInRoot(ctx, candidateRoot, cfg, candidate, startedAt, command)
 }
 
 func (r *Runner) buildRecord(target Target, startedAt, command string, candidate Candidate, result MutationResult, message string) Record {
@@ -377,6 +557,10 @@ func mergeCoverage(dst, src FileCoverage) FileCoverage {
 }
 
 func (r *Runner) executeMutation(ctx context.Context, root string, candidate Candidate, timeout time.Duration) (MutationResult, string, error) {
+	if r.executeMutationFunc != nil {
+		return r.executeMutationFunc(ctx, root, candidate, timeout)
+	}
+
 	mutated, err := ApplyMutation(root, candidate)
 	if err != nil {
 		return MutationResultNotViable, err.Error(), nil

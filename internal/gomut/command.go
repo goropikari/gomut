@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -78,6 +79,7 @@ func (c *Command) newTestCommand() *cobra.Command {
 	flags.String("diff", "", "git diff range or branch name, for example HEAD~1..HEAD or main")
 	flags.StringSlice("type", nil, "mutation result types to output")
 	flags.Duration("timeout", 10*time.Second, "timeout per mutation")
+	flags.Int("parallel", 0, "number of concurrent mutation workers")
 	flags.String("config", "", "config file path")
 	flags.String("progress", string(ProgressModeAuto), "progress display mode: auto, on, or off")
 	flags.String("jsonl", "", "jsonl output file path")
@@ -132,6 +134,8 @@ type testRunInputs struct {
 	diffRange       string
 	resultTypes     []string
 	timeout         time.Duration
+	parallel        int
+	parallelChanged bool
 	progressMode    string
 	progressChanged bool
 	jsonlOutput     string
@@ -172,6 +176,7 @@ func (c *Command) buildTestRunConfig(cmd *cobra.Command) (RunConfig, error) {
 	return RunConfig{
 		Target:       target,
 		Timeout:      inputs.timeout,
+		Parallel:     inputs.parallel,
 		OutputPath:   inputs.jsonlOutput,
 		JSONLEnabled: inputs.jsonlEnabled,
 		HTMLPath:     inputs.htmlOutput,
@@ -188,6 +193,7 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command) (testRunInputs, error) {
 	}
 
 	timeout, _ := cmd.Flags().GetDuration("timeout")
+	parallel, _ := cmd.Flags().GetInt("parallel")
 	pkgTarget, _ := cmd.Flags().GetString("package")
 	allTarget, _ := cmd.Flags().GetBool("all")
 	diffRange, _ := cmd.Flags().GetString("diff")
@@ -200,6 +206,8 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command) (testRunInputs, error) {
 		diffRange:       diffRange,
 		resultTypes:     append([]string(nil), resultTypes...),
 		timeout:         timeout,
+		parallel:        parallel,
+		parallelChanged: cmd.Flags().Changed("parallel"),
 		progressMode:    progressMode,
 		progressChanged: cmd.Flags().Changed("progress"),
 		jsonlOutput:     c.jsonlOutput,
@@ -224,6 +232,7 @@ func (c *Command) applyTestConfigDefaults(inputs *testRunInputs) error {
 		return err
 	}
 
+	c.applyParallelConfigDefaults(inputs)
 	c.applyProgressConfigDefaults(inputs)
 
 	c.applyOutputConfigDefaults(inputs)
@@ -260,6 +269,16 @@ func (c *Command) applyTimeoutConfigDefaults(inputs *testRunInputs) error {
 	inputs.timeout = timeout
 
 	return nil
+}
+
+func (c *Command) applyParallelConfigDefaults(inputs *testRunInputs) {
+	if !inputs.parallelChanged && inputs.config.Parallel != nil {
+		inputs.parallel = *inputs.config.Parallel
+	}
+
+	if inputs.parallel <= 0 {
+		inputs.parallel = runtime.NumCPU()
+	}
 }
 
 func (c *Command) applyProgressConfigDefaults(inputs *testRunInputs) {
