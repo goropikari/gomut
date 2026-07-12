@@ -188,7 +188,7 @@ func ApplyMutation(root string, candidate Candidate) ([]byte, error) {
 	if candidate.Start < 0 || candidate.End > len(src) || candidate.Start > candidate.End {
 		return nil, fmt.Errorf("invalid mutation range for %s:%d", candidate.File, candidate.Line)
 	}
-	out := make([]byte, 0, len(src)-candidate.End+candidate.Start+len(candidate.Replacement))
+	out := make([]byte, 0, len(src)-(candidate.End-candidate.Start)+len(candidate.Replacement))
 	out = append(out, src[:candidate.Start]...)
 	out = append(out, candidate.Replacement...)
 	out = append(out, src[candidate.End:]...)
