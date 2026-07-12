@@ -283,7 +283,7 @@ func mutationFromBooleanLiteral(root string, fset *token.FileSet, src []byte, fi
 	pos := fset.Position(node.Pos())
 
 	line := pos.Line
-	if !mutationAllowedByTarget(file, line, target) {
+	if !mutationAllowedByTarget(root, file, line, target) {
 		return Candidate{}, false
 	}
 
@@ -326,7 +326,7 @@ func mutationFromBasicLit(root string, fset *token.FileSet, src []byte, file, pk
 	pos := fset.Position(node.Pos())
 
 	line := pos.Line
-	if !mutationAllowedByTarget(file, line, target) {
+	if !mutationAllowedByTarget(root, file, line, target) {
 		return Candidate{}, false
 	}
 
@@ -360,7 +360,7 @@ func mutationFromUnaryExpr(root string, fset *token.FileSet, src []byte, file, p
 	end := fset.Position(node.End())
 
 	line := pos.Line
-	if !mutationAllowedByTarget(file, line, target) {
+	if !mutationAllowedByTarget(root, file, line, target) {
 		return Candidate{}, false
 	}
 
@@ -393,7 +393,7 @@ func mutationFromNilCheckBinaryExpr(root string, fset *token.FileSet, src []byte
 	pos := fset.Position(node.OpPos)
 
 	line := pos.Line
-	if !mutationAllowedByTarget(file, line, target) {
+	if !mutationAllowedByTarget(root, file, line, target) {
 		return Candidate{}, false
 	}
 
@@ -427,7 +427,7 @@ func mutationFromBinaryExpr(root string, fset *token.FileSet, src []byte, file, 
 	pos := fset.Position(node.OpPos)
 
 	line := pos.Line
-	if !mutationAllowedByTarget(file, line, target) {
+	if !mutationAllowedByTarget(root, file, line, target) {
 		return Candidate{}, false
 	}
 
@@ -462,7 +462,7 @@ func mutationFromReturnStmt(root string, fset *token.FileSet, src []byte, file, 
 	pos := fset.Position(result.Pos())
 
 	line := pos.Line
-	if !mutationAllowedByTarget(file, line, target) {
+	if !mutationAllowedByTarget(root, file, line, target) {
 		return Candidate{}, false
 	}
 
@@ -522,7 +522,7 @@ func mutationFromAssignStmt(root string, fset *token.FileSet, src []byte, file, 
 	pos := fset.Position(node.TokPos)
 
 	line := pos.Line
-	if !mutationAllowedByTarget(file, line, target) {
+	if !mutationAllowedByTarget(root, file, line, target) {
 		return Candidate{}, false
 	}
 
@@ -550,7 +550,7 @@ func mutationFromIncDecStmt(root string, fset *token.FileSet, src []byte, file, 
 	pos := fset.Position(node.TokPos)
 
 	line := pos.Line
-	if !mutationAllowedByTarget(file, line, target) {
+	if !mutationAllowedByTarget(root, file, line, target) {
 		return Candidate{}, false
 	}
 
@@ -594,7 +594,7 @@ func mutationFromConditionExpr(root string, fset *token.FileSet, src []byte, fil
 	}
 
 	line := pos.Line
-	if !mutationAllowedByTarget(file, line, target) {
+	if !mutationAllowedByTarget(root, file, line, target) {
 		return Candidate{}, false
 	}
 
@@ -624,10 +624,10 @@ func negateCondition(cond ast.Expr, original string) string {
 	}
 }
 
-func mutationAllowedByTarget(file string, line int, target Target) bool {
+func mutationAllowedByTarget(root, file string, line int, target Target) bool {
 	switch target.Mode {
 	case TargetModeDiff:
-		return DiffLineAllowed(file, line)
+		return DiffLineAllowed(repoRel(root, file), line)
 	default:
 		return true
 	}

@@ -1,4 +1,4 @@
-package gomut_test
+package gomut
 
 import (
 	"context"
@@ -9,8 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	gomut "gomut/internal/gomut"
 )
 
 func TestNormalizeDiffRange(t *testing.T) {
@@ -36,7 +34,7 @@ func TestNormalizeDiffRange(t *testing.T) {
 		runGit(t, root, "checkout", "feature")
 
 		// Act
-		got, err := gomut.NormalizeDiffRange(context.Background(), root, "main")
+		got, err := NormalizeDiffRange(context.Background(), root, "main")
 
 		// Assert
 		require.NoError(t, err)
@@ -45,11 +43,67 @@ func TestNormalizeDiffRange(t *testing.T) {
 
 	t.Run("given an explicit range, it preserves the value", func(t *testing.T) {
 		// Arrange
-		got, err := gomut.NormalizeDiffRange(context.Background(), t.TempDir(), "HEAD~1..HEAD")
+		got, err := NormalizeDiffRange(context.Background(), t.TempDir(), "HEAD~1..HEAD")
 
 		// Assert
 		require.NoError(t, err)
 		assert.Equal(t, "HEAD~1..HEAD", got)
+	})
+}
+
+func TestDiffFiles(t *testing.T) {
+	t.Run("given a diff range with a nested go file, it returns the changed file", func(t *testing.T) {
+		// Arrange
+		root := t.TempDir()
+		initGitRepo(t, root)
+
+		require.NoError(t, os.MkdirAll(filepath.Join(root, "sample"), 0o755))
+		writeGitFile(t, root, "go.mod", "module example.com/mut\n\ngo 1.26\n")
+		writeGitFile(t, root, filepath.Join("sample", "sample.go"), "package sample\n\nfunc IsAdult(age int) bool {\n\tif age < 18 {\n\t\treturn false\n\t}\n\n\treturn true\n}\n")
+		runGit(t, root, "add", "go.mod", filepath.Join("sample", "sample.go"))
+		runGit(t, root, "commit", "-m", "initial")
+
+		writeGitFile(t, root, filepath.Join("sample", "sample.go"), "package sample\n\nfunc IsAdult(age int) bool {\n\tif age < 21 {\n\t\treturn false\n\t}\n\n\treturn true\n}\n")
+		runGit(t, root, "add", filepath.Join("sample", "sample.go"))
+		runGit(t, root, "commit", "-m", "update sample")
+
+		// Act
+		files, err := diffFiles(context.Background(), root, "HEAD~1..HEAD")
+
+		// Assert
+		require.NoError(t, err)
+		require.Len(t, files, 1)
+		assert.Equal(t, filepath.ToSlash(filepath.Join("sample", "sample.go")), files[0])
+		assert.True(t, DiffLineAllowed(filepath.Join("sample", "sample.go"), 4))
+	})
+}
+
+func TestDiscoverCandidatesWithDiffTarget(t *testing.T) {
+	t.Run("given a changed nested file, it keeps candidates on changed lines", func(t *testing.T) {
+		// Arrange
+		root := t.TempDir()
+		initGitRepo(t, root)
+
+		require.NoError(t, os.MkdirAll(filepath.Join(root, "sample"), 0o755))
+		writeGitFile(t, root, "go.mod", "module example.com/mut\n\ngo 1.26\n")
+		writeGitFile(t, root, filepath.Join("sample", "sample.go"), "package sample\n\nfunc IsAdult(age int) bool {\n\tif age < 18 {\n\t\treturn false\n\t}\n\n\treturn true\n}\n")
+		runGit(t, root, "add", "go.mod", filepath.Join("sample", "sample.go"))
+		runGit(t, root, "commit", "-m", "initial")
+
+		writeGitFile(t, root, filepath.Join("sample", "sample.go"), "package sample\n\nfunc IsAdult(age int) bool {\n\tif age < 21 {\n\t\treturn false\n\t}\n\n\treturn true\n}\n")
+		runGit(t, root, "add", filepath.Join("sample", "sample.go"))
+		runGit(t, root, "commit", "-m", "update sample")
+
+		files, err := diffFiles(context.Background(), root, "HEAD~1..HEAD")
+		require.NoError(t, err)
+
+		// Act
+		candidates, err := DiscoverCandidates(root, []string{"example.com/mut/sample"}, Target{Mode: TargetModeDiff, Value: "HEAD~1..HEAD"}, map[string]FileCoverage{})
+
+		// Assert
+		require.NoError(t, err)
+		require.NotEmpty(t, candidates)
+		assert.Equal(t, filepath.ToSlash(filepath.Join("sample", "sample.go")), files[0])
 	})
 }
 
