@@ -14,12 +14,12 @@ type MutationKind string
 
 const (
 	MutationKindComparisonOperator MutationKind = "comparison_operator"
-	MutationKindLogicalOperator     MutationKind = "logical_operator"
-	MutationKindGuardClause         MutationKind = "guard_clause"
-	MutationKindArithmeticOperator   MutationKind = "arithmetic_operator"
-	MutationKindControlFlow         MutationKind = "control_flow"
-	MutationKindAssignmentBitwise   MutationKind = "assignment_bitwise"
-	MutationKindReturn              MutationKind = "return"
+	MutationKindLogicalOperator    MutationKind = "logical_operator"
+	MutationKindGuardClause        MutationKind = "guard_clause"
+	MutationKindArithmeticOperator MutationKind = "arithmetic_operator"
+	MutationKindControlFlow        MutationKind = "control_flow"
+	MutationKindAssignmentBitwise  MutationKind = "assignment_bitwise"
+	MutationKindReturn             MutationKind = "return"
 )
 
 type MutationResult string
@@ -47,19 +47,21 @@ type Summary struct {
 }
 
 type MutationMetadata struct {
-	File    string         `json:"file"`
-	Line    int            `json:"line"`
-	Kind    MutationKind   `json:"kind"`
-	Result  MutationResult `json:"result"`
-	Message string         `json:"message"`
+	File        string         `json:"file"`
+	Line        int            `json:"line"`
+	Kind        MutationKind   `json:"kind"`
+	Original    string         `json:"original"`
+	Replacement string         `json:"replacement"`
+	Result      MutationResult `json:"result"`
+	Message     string         `json:"message"`
 }
 
 type Record struct {
 	Target    Target           `json:"target"`
-	StartedAt string            `json:"started_at"`
-	Command   string            `json:"command"`
-	Summary   Summary           `json:"summary"`
-	Mutation  MutationMetadata  `json:"mutation"`
+	StartedAt string           `json:"started_at"`
+	Command   string           `json:"command"`
+	Summary   Summary          `json:"summary"`
+	Mutation  MutationMetadata `json:"mutation"`
 }
 
 type Candidate struct {

@@ -3,9 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
-
 	"gomut/internal/gomut"
+	"os"
 )
 
 func main() {
@@ -19,4 +18,3 @@ func run(ctx context.Context, args []string) error {
 	cmd := gomut.NewCommand(os.Stdout, os.Stderr)
 	return cmd.Run(ctx, args)
 }
-

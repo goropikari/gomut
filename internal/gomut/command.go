@@ -25,6 +25,7 @@ func (c *Command) Run(ctx context.Context, args []string) error {
 	if len(args) == 0 {
 		return c.printUsage()
 	}
+
 	switch args[0] {
 	case "test":
 		return c.runTest(ctx, args[1:])
@@ -72,12 +73,14 @@ func (c *Command) runTest(ctx context.Context, args []string) error {
 	}
 
 	runner := NewRunner(c.stdout, c.stderr)
+
 	return runner.Run(ctx, cfg)
 }
 
 func NormalizeTestArgs(args []string) ([]string, string, error) {
 	normalized := make([]string, 0, len(args))
 	output := ""
+
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		switch {
@@ -96,6 +99,7 @@ func NormalizeTestArgs(args []string) ([]string, string, error) {
 			normalized = append(normalized, arg)
 		}
 	}
+
 	return normalized, output, nil
 }
 
@@ -104,18 +108,23 @@ func ResolveTarget(pkg string, all bool, diffRange string) (Target, error) {
 	if pkg != "" {
 		selected++
 	}
+
 	if all {
 		selected++
 	}
+
 	if diffRange != "" {
 		selected++
 	}
+
 	if selected == 0 {
 		return Target{}, errors.New("select one target mode with --package, --all, or --diff")
 	}
+
 	if selected > 1 {
 		return Target{}, errors.New("only one of --package, --all, or --diff can be set")
 	}
+
 	switch {
 	case pkg != "":
 		return Target{Mode: TargetModePackage, Value: pkg}, nil
@@ -125,6 +134,7 @@ func ResolveTarget(pkg string, all bool, diffRange string) (Target, error) {
 		if diffRange == "" {
 			diffRange = "HEAD"
 		}
+
 		return Target{Mode: TargetModeDiff, Value: diffRange}, nil
 	}
 }
@@ -139,6 +149,7 @@ func repoRel(path string) string {
 	if err != nil {
 		return path
 	}
+
 	return filepath.ToSlash(rel)
 }
 

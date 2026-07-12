@@ -29,103 +29,133 @@ func (r *Runner) Run(ctx context.Context, cfg RunConfig) error {
 
 	packages, err := r.resolvePackages(ctx, root, cfg.Target)
 	if err != nil {
-		return err
+		return fmt.Errorf("resolve packages: %w", err)
 	}
+
 	if len(packages) == 0 {
 		return errors.New("no packages matched target")
 	}
 
 	coverage, err := r.runBaseline(ctx, root, packages)
 	if err != nil {
-		return err
+		return fmt.Errorf("run baseline: %w", err)
 	}
 
 	candidates, err := DiscoverCandidates(root, packages, cfg.Target, coverage)
 	if err != nil {
+		return fmt.Errorf("discover candidates: %w", err)
+	}
+
+	return r.runCandidates(ctx, root, cfg, candidates)
+}
+
+func (r *Runner) runCandidates(ctx context.Context, root string, cfg RunConfig, candidates []Candidate) error {
+	output := io.Writer(r.stdout)
+
+	outputFile, err := openOutput(cfg.OutputPath)
+	if err != nil {
 		return err
 	}
 
-	output := io.Writer(r.stdout)
-	var outputFile *os.File
-	if cfg.OutputPath != "" {
-		outputFile, err = os.Create(cfg.OutputPath)
-		if err != nil {
-			return err
-		}
+	if outputFile != nil {
 		defer outputFile.Close()
+
 		output = outputFile
 	}
 
 	summary := Summary{}
 	startedAt := time.Now().Format(time.RFC3339)
 	command := strings.Join(os.Args, " ")
+	recordCount := 0
 
-	var records []Record
 	for _, candidate := range candidates {
 		summary.Total++
-		if !candidate.Covered {
-			summary.NotCovered++
-			record := Record{
-				Target:    cfg.Target,
-				StartedAt: startedAt,
-				Command:   command,
-				Summary:   summary,
-				Mutation: MutationMetadata{
-					File:    candidate.File,
-					Line:    candidate.Line,
-					Kind:    candidate.Kind,
-					Result:  MutationResultNotCovered,
-					Message: "line not covered by baseline tests",
-				},
-			}
-			records = append(records, record)
-			if err := writeJSONL(output, record); err != nil {
-				return err
-			}
-			continue
-		}
-		result, message, err := r.executeMutation(ctx, root, candidate, cfg.Timeout)
+
+		record, result, err := r.processCandidate(ctx, root, cfg, candidate, startedAt, command)
 		if err != nil {
 			return err
 		}
 
-		switch result {
-		case MutationResultKilled:
-			summary.Killed++
-		case MutationResultLived:
-			summary.Lived++
-		case MutationResultNotCovered:
-			summary.NotCovered++
-		case MutationResultTimedOut:
-			summary.TimedOut++
-		case MutationResultNotViable:
-			summary.NotViable++
-		}
+		summary = updateSummary(summary, result)
+		record.Summary = summary
 
-		record := Record{
-			Target:    cfg.Target,
-			StartedAt: startedAt,
-			Command:   command,
-			Summary:   summary,
-			Mutation: MutationMetadata{
-				File:    candidate.File,
-				Line:    candidate.Line,
-				Kind:    candidate.Kind,
-				Result:  result,
-				Message: message,
-			},
-		}
-		records = append(records, record)
+		recordCount++
+
 		if err := writeJSONL(output, record); err != nil {
 			return err
 		}
 	}
 
 	r.printSummary(summary, len(candidates))
-	if len(records) == 0 {
+
+	if recordCount == 0 {
 		fmt.Fprintln(r.stderr, "No mutation candidates found.")
 	}
+
 	return nil
+}
+
+func openOutput(path string) (*os.File, error) {
+	if path == "" {
+		return nil, nil
+	}
+
+	outputFile, err := os.Create(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return outputFile, nil
+}
+
+func (r *Runner) processCandidate(ctx context.Context, root string, cfg RunConfig, candidate Candidate, startedAt, command string) (Record, MutationResult, error) {
+	if !candidate.Covered {
+		record := r.buildRecord(cfg.Target, startedAt, command, candidate, MutationResultNotCovered, "line not covered by baseline tests")
+		return record, MutationResultNotCovered, nil
+	}
+
+	result, message, err := r.executeMutation(ctx, root, candidate, cfg.Timeout)
+	if err != nil {
+		return Record{}, "", err
+	}
+
+	record := r.buildRecord(cfg.Target, startedAt, command, candidate, result, message)
+
+	return record, result, nil
+}
+
+func (r *Runner) buildRecord(target Target, startedAt, command string, candidate Candidate, result MutationResult, message string) Record {
+	return Record{
+		Target:    target,
+		StartedAt: startedAt,
+		Command:   command,
+		Mutation: MutationMetadata{
+			File:        candidate.File,
+			Line:        candidate.Line,
+			Kind:        candidate.Kind,
+			Original:    candidate.Original,
+			Replacement: candidate.Replacement,
+			Result:      result,
+			Message:     message,
+		},
+	}
+}
+
+func updateSummary(summary Summary, result MutationResult) Summary {
+	switch result {
+	case MutationResultKilled:
+		summary.Killed++
+	case MutationResultLived:
+		summary.Lived++
+	case MutationResultNotCovered:
+		summary.NotCovered++
+	case MutationResultTimedOut:
+		summary.TimedOut++
+	case MutationResultNotViable:
+		summary.NotViable++
+	}
+
+	return summary
 }
 
 func (r *Runner) printSummary(summary Summary, total int) {
@@ -143,13 +173,24 @@ func (r *Runner) resolvePackages(ctx context.Context, root string, target Target
 	case TargetModePackage:
 		return []string{target.Value}, nil
 	case TargetModeAll:
-		return listPackages(ctx, root, ".")
+		packages, err := listPackages(ctx, root, "./...")
+		if err != nil {
+			return nil, fmt.Errorf("list packages for all target: %w", err)
+		}
+
+		return packages, nil
 	case TargetModeDiff:
 		files, err := diffFiles(ctx, root, target.Value)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("collect diff files: %w", err)
 		}
-		return packageDirsFromFiles(root, files)
+
+		packages, err := packageDirsFromFiles(root, files)
+		if err != nil {
+			return nil, fmt.Errorf("resolve packages from diff files: %w", err)
+		}
+
+		return packages, nil
 	default:
 		return nil, fmt.Errorf("unsupported target mode %q", target.Mode)
 	}
@@ -157,23 +198,28 @@ func (r *Runner) resolvePackages(ctx context.Context, root string, target Target
 
 func (r *Runner) runBaseline(ctx context.Context, root string, packages []string) (map[string]FileCoverage, error) {
 	merged := map[string]FileCoverage{}
+
 	for _, pkg := range packages {
 		coverProfile := filepath.Join(os.TempDir(), strings.ReplaceAll("gomut-"+strings.ReplaceAll(pkg, "/", "-"), "...", "all")+".cover")
 		cmd := exec.CommandContext(ctx, "go", "test", "-coverprofile", coverProfile, pkg)
 		cmd.Dir = root
 		cmd.Env = goCommandEnv()
+
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			return nil, fmt.Errorf("baseline go test failed for %s: %w\n%s", pkg, err, string(out))
 		}
+
 		coverage, err := readCoverage(coverProfile)
 		if err != nil {
 			return nil, err
 		}
+
 		for file, cov := range coverage {
 			merged[file] = mergeCoverage(merged[file], cov)
 		}
 	}
+
 	return merged, nil
 }
 
@@ -197,32 +243,39 @@ func (r *Runner) executeMutation(ctx context.Context, root string, candidate Can
 	}
 
 	path := resolveSourcePath(root, candidate.File)
+
 	backup, err := os.ReadFile(path)
 	if err != nil {
 		return "", "", err
 	}
-	if err := os.WriteFile(path, mutated, 0o644); err != nil {
+
+	if err := writeFilePreserveMode(path, mutated); err != nil {
 		return "", "", err
 	}
 	defer func() {
-		_ = os.WriteFile(path, backup, 0o644)
+		_ = writeFilePreserveMode(path, backup)
 	}()
 
 	cmdCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
+
 	cmd := exec.CommandContext(cmdCtx, "go", "test", pkg)
 	cmd.Dir = root
 	cmd.Env = goCommandEnv()
 	out, err := cmd.CombinedOutput()
+
 	if cmdCtx.Err() == context.DeadlineExceeded {
 		return MutationResultTimedOut, "mutation test timed out", nil
 	}
+
 	if err != nil {
 		if looksLikeNotViable(string(out)) {
 			return MutationResultNotViable, trimOutput(out), nil
 		}
+
 		return MutationResultKilled, trimOutput(out), nil
 	}
+
 	return MutationResultLived, trimOutput(out), nil
 }
 
@@ -240,6 +293,7 @@ func looksLikeNotViable(output string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -248,5 +302,6 @@ func trimOutput(out []byte) string {
 	if text == "" {
 		return "tests passed"
 	}
+
 	return text
 }

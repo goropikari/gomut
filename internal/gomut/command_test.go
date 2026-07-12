@@ -1,6 +1,7 @@
 package gomut_test
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -70,7 +71,8 @@ func TestApplyMutation(t *testing.T) {
 		// Arrange
 		dir := t.TempDir()
 		file := filepath.Join(dir, "sample.go")
-		require.NoError(t, os.WriteFile(file, []byte("package sample\n\nfunc add() int { return 1 + 2 }\n"), 0o644))
+		require.NoError(t, os.WriteFile(file, []byte("package sample\n\nfunc add() int { return 1 + 2 }\n"), 0o600))
+
 		candidate := gomut.Candidate{
 			File:        "sample.go",
 			Start:       42,
@@ -116,5 +118,30 @@ func TestNormalizeTestArgs(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
 		assert.Equal(t, "mutations.jsonl", output)
+	})
+}
+
+func TestRecordJSONIncludesMutationReplacementDetails(t *testing.T) {
+	t.Run("given a mutation record, it serializes original and replacement", func(t *testing.T) {
+		// Arrange
+		record := gomut.Record{
+			Target: gomut.Target{Mode: gomut.TargetModePackage, Value: "./sample"},
+			Mutation: gomut.MutationMetadata{
+				File:        "sample.go",
+				Line:        18,
+				Kind:        gomut.MutationKindLogicalOperator,
+				Original:    "&&",
+				Replacement: "||",
+				Result:      gomut.MutationResultLived,
+				Message:     "ok",
+			},
+		}
+
+		// Act
+		data, err := json.Marshal(record)
+
+		// Assert
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"target":{"mode":"package","value":"./sample"},"started_at":"","command":"","summary":{"total":0,"killed":0,"lived":0,"not_covered":0,"timed_out":0,"not_viable":0},"mutation":{"file":"sample.go","line":18,"kind":"logical_operator","original":"&&","replacement":"||","result":"LIVED","message":"ok"}}`, string(data))
 	})
 }
