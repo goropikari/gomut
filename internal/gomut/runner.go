@@ -51,26 +51,42 @@ func (r *Runner) Run(ctx context.Context, cfg RunConfig) (err error) {
 		}
 	}()
 
+	candidates, notices, err := r.discoverCandidates(ctx, originalRoot, root, cfg)
+	if err != nil {
+		return err
+	}
+
+	r.reportExclusionNotices(notices)
+
+	return r.runCandidates(ctx, root, cfg, candidates)
+}
+
+func (r *Runner) discoverCandidates(ctx context.Context, originalRoot, root string, cfg RunConfig) ([]Candidate, []ExclusionNotice, error) {
 	packages, err := r.resolvePackages(ctx, originalRoot, root, cfg.Target)
 	if err != nil {
-		return fmt.Errorf("resolve packages: %w", err)
+		return nil, nil, fmt.Errorf("resolve packages: %w", err)
 	}
 
 	if len(packages) == 0 {
-		return errors.New("no packages matched target")
+		return nil, nil, errors.New("no packages matched target")
 	}
 
 	coverage, err := r.runBaseline(ctx, root, packages)
 	if err != nil {
-		return fmt.Errorf("run baseline: %w", err)
+		return nil, nil, fmt.Errorf("run baseline: %w", err)
 	}
 
-	candidates, err := DiscoverCandidates(root, packages, cfg.Target, coverage)
+	filter, err := NewExclusionFilter(root, cfg.Exclude)
 	if err != nil {
-		return fmt.Errorf("discover candidates: %w", err)
+		return nil, nil, fmt.Errorf("build exclusion filter: %w", err)
 	}
 
-	return r.runCandidates(ctx, root, cfg, candidates)
+	candidates, notices, err := DiscoverCandidatesWithExclusions(root, packages, cfg.Target, coverage, filter)
+	if err != nil {
+		return nil, nil, fmt.Errorf("discover candidates: %w", err)
+	}
+
+	return candidates, notices, nil
 }
 
 func (r *Runner) runCandidates(ctx context.Context, root string, cfg RunConfig, candidates []Candidate) error {
@@ -114,6 +130,17 @@ func (r *Runner) runCandidates(ctx context.Context, root string, cfg RunConfig, 
 	}
 
 	return nil
+}
+
+func (r *Runner) reportExclusionNotices(notices []ExclusionNotice) {
+	for _, notice := range notices {
+		if notice.Line > 0 {
+			fmt.Fprintf(r.stderr, "excluded %s:%d: %s\n", notice.File, notice.Line, notice.Reason)
+			continue
+		}
+
+		fmt.Fprintf(r.stderr, "excluded %s: %s\n", notice.File, notice.Reason)
+	}
 }
 
 func (r *Runner) openCandidateOutputs(cfg RunConfig) (io.Writer, io.Writer, func(), error) {

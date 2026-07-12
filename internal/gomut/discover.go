@@ -103,12 +103,30 @@ var unaryMutationSpecs = map[token.Token]unaryMutationSpec{
 }
 
 func DiscoverCandidates(root string, packages []string, target Target, coverage map[string]FileCoverage) ([]Candidate, error) {
-	var candidates []Candidate
+	candidates, _, err := discoverCandidates(root, packages, target, coverage, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return candidates, nil
+}
+
+// DiscoverCandidatesWithExclusions collects mutation candidates and exclusion
+// notices using the provided exclusion filter.
+func DiscoverCandidatesWithExclusions(root string, packages []string, target Target, coverage map[string]FileCoverage, filter *ExclusionFilter) ([]Candidate, []ExclusionNotice, error) {
+	return discoverCandidates(root, packages, target, coverage, filter)
+}
+
+func discoverCandidates(root string, packages []string, target Target, coverage map[string]FileCoverage, filter *ExclusionFilter) ([]Candidate, []ExclusionNotice, error) {
+	var (
+		candidates []Candidate
+		notices    []ExclusionNotice
+	)
 
 	for _, pkg := range packages {
 		files, err := packageGoFiles(root, pkg)
 		if err != nil {
-			return nil, fmt.Errorf("list go files for %s: %w", pkg, err)
+			return nil, nil, fmt.Errorf("list go files for %s: %w", pkg, err)
 		}
 
 		for _, file := range files {
@@ -116,11 +134,19 @@ func DiscoverCandidates(root string, packages []string, target Target, coverage 
 				continue
 			}
 
-			fileCandidates, err := discoverFileCandidates(root, pkg, file, target, coverage)
-			if err != nil {
-				return nil, fmt.Errorf("discover candidates for %s: %w", file, err)
+			if filter != nil {
+				if skipped, reason := filter.SkipFile(repoRel(root, file)); skipped {
+					notices = append(notices, ExclusionNotice{File: repoRel(root, file), Reason: reason})
+					continue
+				}
 			}
 
+			fileCandidates, fileNotices, err := discoverFileCandidates(root, pkg, file, target, coverage, filter)
+			if err != nil {
+				return nil, nil, fmt.Errorf("discover candidates for %s: %w", file, err)
+			}
+
+			notices = append(notices, fileNotices...)
 			candidates = append(candidates, fileCandidates...)
 		}
 	}
@@ -137,35 +163,45 @@ func DiscoverCandidates(root string, packages []string, target Target, coverage 
 		return candidates[i].Kind < candidates[j].Kind
 	})
 
-	return candidates, nil
+	return candidates, notices, nil
 }
 
-func discoverFileCandidates(root, pkg, file string, target Target, coverage map[string]FileCoverage) ([]Candidate, error) {
+func discoverFileCandidates(root, pkg, file string, target Target, coverage map[string]FileCoverage, filter *ExclusionFilter) ([]Candidate, []ExclusionNotice, error) {
 	src, err := os.ReadFile(file)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	fset := token.NewFileSet()
 
 	astFile, err := parser.ParseFile(fset, file, src, parser.ParseComments)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	covered := coverage[repoRel(root, file)]
 
-	var candidates []Candidate
+	var (
+		candidates []Candidate
+		notices    []ExclusionNotice
+	)
 
 	ast.Inspect(astFile, func(n ast.Node) bool {
 		if candidate, ok := mutationCandidateFromNode(root, fset, src, file, pkg, n, target, covered); ok {
+			if filter != nil {
+				if skipped, reason := filter.SkipCandidate(candidate); skipped {
+					notices = append(notices, ExclusionNotice{File: candidate.File, Line: candidate.Line, Reason: reason})
+					return true
+				}
+			}
+
 			candidates = append(candidates, candidate)
 		}
 
 		return true
 	})
 
-	return candidates, nil
+	return candidates, notices, nil
 }
 
 func mutationCandidateFromNode(root string, fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {

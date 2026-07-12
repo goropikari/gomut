@@ -122,6 +122,7 @@ type RunConfig struct {
 	Timeout time.Duration
 	// Parallel controls how many mutation workers the runner may use.
 	Parallel     int
+	Exclude      []string
 	OutputPath   string
 	JSONLEnabled bool
 	HTMLPath     string
