@@ -45,13 +45,15 @@ func (r *Runner) Run(ctx context.Context, cfg RunConfig) error {
 		return err
 	}
 
-	var output io.WriteCloser
+	output := io.Writer(r.stdout)
+	var outputFile *os.File
 	if cfg.OutputPath != "" {
-		output, err = os.Create(cfg.OutputPath)
+		outputFile, err = os.Create(cfg.OutputPath)
 		if err != nil {
 			return err
 		}
-		defer output.Close()
+		defer outputFile.Close()
+		output = outputFile
 	}
 
 	summary := Summary{}
@@ -77,10 +79,8 @@ func (r *Runner) Run(ctx context.Context, cfg RunConfig) error {
 				},
 			}
 			records = append(records, record)
-			if output != nil {
-				if err := writeJSONL(output, record); err != nil {
-					return err
-				}
+			if err := writeJSONL(output, record); err != nil {
+				return err
 			}
 			continue
 		}
@@ -116,28 +116,26 @@ func (r *Runner) Run(ctx context.Context, cfg RunConfig) error {
 			},
 		}
 		records = append(records, record)
-		if output != nil {
-			if err := writeJSONL(output, record); err != nil {
-				return err
-			}
+		if err := writeJSONL(output, record); err != nil {
+			return err
 		}
 	}
 
 	r.printSummary(summary, len(candidates))
 	if len(records) == 0 {
-		fmt.Fprintln(r.stdout, "No mutation candidates found.")
+		fmt.Fprintln(r.stderr, "No mutation candidates found.")
 	}
 	return nil
 }
 
 func (r *Runner) printSummary(summary Summary, total int) {
-	fmt.Fprintln(r.stdout, "Mutation summary")
-	fmt.Fprintf(r.stdout, "  total: %d\n", total)
-	fmt.Fprintf(r.stdout, "  killed: %d\n", summary.Killed)
-	fmt.Fprintf(r.stdout, "  lived: %d\n", summary.Lived)
-	fmt.Fprintf(r.stdout, "  not covered: %d\n", summary.NotCovered)
-	fmt.Fprintf(r.stdout, "  timed out: %d\n", summary.TimedOut)
-	fmt.Fprintf(r.stdout, "  not viable: %d\n", summary.NotViable)
+	fmt.Fprintln(r.stderr, "Mutation summary")
+	fmt.Fprintf(r.stderr, "  total: %d\n", total)
+	fmt.Fprintf(r.stderr, "  killed: %d\n", summary.Killed)
+	fmt.Fprintf(r.stderr, "  lived: %d\n", summary.Lived)
+	fmt.Fprintf(r.stderr, "  not covered: %d\n", summary.NotCovered)
+	fmt.Fprintf(r.stderr, "  timed out: %d\n", summary.TimedOut)
+	fmt.Fprintf(r.stderr, "  not viable: %d\n", summary.NotViable)
 }
 
 func (r *Runner) resolvePackages(ctx context.Context, root string, target Target) ([]string, error) {

@@ -45,7 +45,9 @@ go build -o gomut ./cmd/gomut
 
 ## Output
 
-標準出力には集計サマリを出します。`--jsonl` を指定すると、mutation ごとに 1 行の JSON を出力します。
+`stdout` は JSON Lines の出力先です。`--jsonl` にファイルパスを指定した場合のみ、そのファイルに書き込みます。
+
+集計サマリや補助メッセージは `stderr` に出します。
 
 主な結果値:
 
@@ -73,6 +75,17 @@ go build -o gomut ./cmd/gomut
 - guard clause の単純な return 変異
 
 未実装のものは今後追加できます。
+
+## Planned Extensions
+
+- `NOT COVERED` 判定の精度向上
+- `diff` モードの対象解決をより厳密にする
+- 追加 mutation 種別の実装
+- 並列実行の導入
+- レポート出力形式の拡張
+- CI 連携用のしきい値判定
+- HTML などの可視化出力
+- 自動修正や提案フロー
 
 ## Testing
 

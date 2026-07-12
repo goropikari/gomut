@@ -48,7 +48,7 @@ func (c *Command) runTest(ctx context.Context, args []string) error {
 		allTarget = fs.Bool("all", false, "test all packages")
 		diffRange = fs.String("diff", "", "git diff range, for example HEAD~1..HEAD")
 		timeout   = fs.Duration("timeout", 10*time.Second, "timeout per mutation")
-		output    = fs.String("jsonl", "", "write JSON Lines output to this file")
+		output    = fs.String("jsonl", "", "write JSON Lines output to this file; defaults to stdout")
 	)
 
 	if err := fs.Parse(args); err != nil {
