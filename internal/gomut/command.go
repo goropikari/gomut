@@ -177,6 +177,7 @@ func (c *Command) buildTestRunConfig(cmd *cobra.Command) (RunConfig, error) {
 		Target:       target,
 		Timeout:      inputs.timeout,
 		Parallel:     inputs.parallel,
+		Exclude:      append([]string(nil), inputs.config.Exclude...),
 		OutputPath:   inputs.jsonlOutput,
 		JSONLEnabled: inputs.jsonlEnabled,
 		HTMLPath:     inputs.htmlOutput,
