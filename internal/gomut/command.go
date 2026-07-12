@@ -78,6 +78,7 @@ func (c *Command) newTestCommand() *cobra.Command {
 	flags.String("diff", "", "git diff range or branch name, for example HEAD~1..HEAD or main")
 	flags.StringSlice("type", nil, "mutation result types to output")
 	flags.Duration("timeout", 10*time.Second, "timeout per mutation")
+	flags.String("config", "", "config file path")
 	flags.String("jsonl", "", "jsonl output file path")
 	flags.Lookup("jsonl").NoOptDefVal = ""
 	flags.String("html", "", "html output file path")
@@ -91,46 +92,199 @@ func (c *Command) runTest(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("unexpected arguments: %s", strings.Join(args, " "))
 	}
 
-	var (
-		pkgTarget, _   = cmd.Flags().GetString("package")
-		allTarget, _   = cmd.Flags().GetBool("all")
-		diffRange, _   = cmd.Flags().GetString("diff")
-		resultTypes, _ = cmd.Flags().GetStringSlice("type")
-		timeout, _     = cmd.Flags().GetDuration("timeout")
-		jsonlOutput, _ = cmd.Flags().GetString("jsonl")
-		htmlOutput, _  = cmd.Flags().GetString("html")
-	)
-	if jsonlOutput == "" {
-		jsonlOutput = c.jsonlOutput
-	}
-
-	if htmlOutput == "" {
-		htmlOutput = c.htmlOutput
-	}
-
-	resultFilter, err := ParseMutationResultFilter(resultTypes)
+	cfg, err := c.buildTestRunConfig(cmd)
 	if err != nil {
 		return err
-	}
-
-	target, err := ResolveTarget(pkgTarget, allTarget, diffRange)
-	if err != nil {
-		return err
-	}
-
-	cfg := RunConfig{
-		Target:       target,
-		Timeout:      timeout,
-		OutputPath:   jsonlOutput,
-		JSONLEnabled: c.jsonlEnabled || cmd.Flags().Changed("jsonl"),
-		HTMLPath:     htmlOutput,
-		HTMLEnabled:  c.htmlEnabled || cmd.Flags().Changed("html"),
-		ResultFilter: resultFilter,
 	}
 
 	runner := NewRunner(c.stdout, c.stderr)
 
 	return runner.Run(cmd.Context(), cfg)
+}
+
+func (c *Command) loadTestConfig(cmd *cobra.Command) (Config, error) {
+	configPath, _ := cmd.Flags().GetString("config")
+	if configPath != "" {
+		return LoadConfig(configPath)
+	}
+
+	root, err := os.Getwd()
+	if err != nil {
+		return Config{}, err
+	}
+
+	defaultPath := DefaultConfigPath(root)
+	if _, statErr := os.Stat(defaultPath); statErr != nil {
+		if errors.Is(statErr, os.ErrNotExist) {
+			return Config{}, nil
+		}
+
+		return Config{}, fmt.Errorf("check config %s: %w", defaultPath, statErr)
+	}
+
+	return LoadConfig(defaultPath)
+}
+
+type testRunInputs struct {
+	pkgTarget      string
+	allTarget      bool
+	diffRange      string
+	resultTypes    []string
+	timeout        time.Duration
+	jsonlOutput    string
+	jsonlEnabled   bool
+	htmlOutput     string
+	htmlEnabled    bool
+	targetChanged  bool
+	typeChanged    bool
+	timeoutChanged bool
+	config         Config
+}
+
+func (c *Command) buildTestRunConfig(cmd *cobra.Command) (RunConfig, error) {
+	inputs, err := c.loadTestRunInputs(cmd)
+	if err != nil {
+		return RunConfig{}, err
+	}
+
+	if err := c.applyTestConfigDefaults(&inputs); err != nil {
+		return RunConfig{}, err
+	}
+
+	resultFilter, err := ParseMutationResultFilter(inputs.resultTypes)
+	if err != nil {
+		return RunConfig{}, err
+	}
+
+	target, err := ResolveTarget(inputs.pkgTarget, inputs.allTarget, inputs.diffRange)
+	if err != nil {
+		return RunConfig{}, err
+	}
+
+	return RunConfig{
+		Target:       target,
+		Timeout:      inputs.timeout,
+		OutputPath:   inputs.jsonlOutput,
+		JSONLEnabled: inputs.jsonlEnabled,
+		HTMLPath:     inputs.htmlOutput,
+		HTMLEnabled:  inputs.htmlEnabled,
+		ResultFilter: resultFilter,
+	}, nil
+}
+
+func (c *Command) loadTestRunInputs(cmd *cobra.Command) (testRunInputs, error) {
+	config, err := c.loadTestConfig(cmd)
+	if err != nil {
+		return testRunInputs{}, err
+	}
+
+	timeout, _ := cmd.Flags().GetDuration("timeout")
+	pkgTarget, _ := cmd.Flags().GetString("package")
+	allTarget, _ := cmd.Flags().GetBool("all")
+	diffRange, _ := cmd.Flags().GetString("diff")
+	resultTypes, _ := cmd.Flags().GetStringSlice("type")
+
+	return testRunInputs{
+		pkgTarget:      pkgTarget,
+		allTarget:      allTarget,
+		diffRange:      diffRange,
+		resultTypes:    append([]string(nil), resultTypes...),
+		timeout:        timeout,
+		jsonlOutput:    c.jsonlOutput,
+		jsonlEnabled:   c.jsonlEnabled,
+		htmlOutput:     c.htmlOutput,
+		htmlEnabled:    c.htmlEnabled,
+		targetChanged:  cmd.Flags().Changed("package") || cmd.Flags().Changed("all") || cmd.Flags().Changed("diff"),
+		typeChanged:    cmd.Flags().Changed("type"),
+		timeoutChanged: cmd.Flags().Changed("timeout"),
+		config:         config,
+	}, nil
+}
+
+func (c *Command) applyTestConfigDefaults(inputs *testRunInputs) error {
+	if err := c.applyTargetConfigDefaults(inputs); err != nil {
+		return err
+	}
+
+	c.applyResultTypeConfigDefaults(inputs)
+
+	if err := c.applyTimeoutConfigDefaults(inputs); err != nil {
+		return err
+	}
+
+	c.applyOutputConfigDefaults(inputs)
+
+	return nil
+}
+
+func (c *Command) applyTargetConfigDefaults(inputs *testRunInputs) error {
+	if inputs.targetChanged || inputs.config.Target == nil || inputs.config.Target.Mode == nil {
+		return nil
+	}
+
+	return applyConfigTargetMode(inputs, *inputs.config.Target.Mode, inputs.config.Target.Value)
+}
+
+func (c *Command) applyResultTypeConfigDefaults(inputs *testRunInputs) {
+	if inputs.typeChanged || len(inputs.config.Type) == 0 {
+		return
+	}
+
+	inputs.resultTypes = append([]string(nil), inputs.config.Type...)
+}
+
+func (c *Command) applyTimeoutConfigDefaults(inputs *testRunInputs) error {
+	if inputs.timeoutChanged || inputs.config.Timeout == nil {
+		return nil
+	}
+
+	timeout, err := time.ParseDuration(*inputs.config.Timeout)
+	if err != nil {
+		return fmt.Errorf("parse config timeout: %w", err)
+	}
+
+	inputs.timeout = timeout
+
+	return nil
+}
+
+func (c *Command) applyOutputConfigDefaults(inputs *testRunInputs) {
+	if !inputs.jsonlEnabled && inputs.config.JSONL != nil {
+		inputs.jsonlOutput = *inputs.config.JSONL
+		inputs.jsonlEnabled = true
+	}
+
+	if !inputs.htmlEnabled && inputs.config.HTML != nil {
+		inputs.htmlOutput = *inputs.config.HTML
+		inputs.htmlEnabled = true
+	}
+}
+
+func applyConfigTargetMode(inputs *testRunInputs, mode TargetMode, value *string) error {
+	switch mode {
+	case TargetModePackage:
+		if value == nil || *value == "" {
+			return errors.New("config target.value is required when target.mode is package")
+		}
+
+		inputs.pkgTarget = *value
+	case TargetModeAll:
+		inputs.allTarget = true
+	case TargetModeDiff:
+		inputs.diffRange = configDiffRange(value)
+	default:
+		return fmt.Errorf("unknown config target mode: %s", mode)
+	}
+
+	return nil
+}
+
+func configDiffRange(value *string) string {
+	if value != nil && *value != "" {
+		return *value
+	}
+
+	return "HEAD"
 }
 
 func NormalizeTestArgs(args []string) ([]string, string, bool, string, bool, error) {
