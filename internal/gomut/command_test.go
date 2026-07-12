@@ -131,6 +131,19 @@ func TestNormalizeTestArgs(t *testing.T) {
 		assert.False(t, htmlEnabled)
 	})
 
+	t.Run("given short jsonl syntax, it captures the file path", func(t *testing.T) {
+		// Arrange
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "-jsonl", "mutations.jsonl"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
+		assert.JSONEq(t, `"mutations.jsonl"`, strconv.Quote(jsonlOutput))
+		assert.True(t, jsonlEnabled)
+		assert.Empty(t, htmlOutput)
+		assert.False(t, htmlEnabled)
+	})
+
 	t.Run("given html without a value, it keeps stdout output", func(t *testing.T) {
 		// Arrange
 		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--html"})
@@ -147,6 +160,19 @@ func TestNormalizeTestArgs(t *testing.T) {
 	t.Run("given html with a value, it captures the file path", func(t *testing.T) {
 		// Arrange
 		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--html", "report.html"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
+		assert.Empty(t, jsonlOutput)
+		assert.False(t, jsonlEnabled)
+		assert.Equal(t, "report.html", htmlOutput)
+		assert.True(t, htmlEnabled)
+	})
+
+	t.Run("given short html syntax, it captures the file path", func(t *testing.T) {
+		// Arrange
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "-html", "report.html"})
 
 		// Assert
 		require.NoError(t, err)
@@ -281,6 +307,23 @@ func TestCommandRunHTMLOutput(t *testing.T) {
 
 		_, statErr := os.Stat(htmlPath)
 		assert.Error(t, statErr)
+	})
+}
+
+func TestCommandRunRejectsUnexpectedArguments(t *testing.T) {
+	t.Run("given an extra positional argument, it fails before running mutations", func(t *testing.T) {
+		// Arrange
+		root := createResultFilterFixture(t)
+
+		// Act
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./sample", "unexpected"})
+
+		// Assert
+		require.Error(t, err)
+		assert.Empty(t, stdout)
+		assert.Empty(t, stderr)
+		assert.Contains(t, err.Error(), "unexpected arguments")
+		assert.Contains(t, err.Error(), "unexpected")
 	})
 }
 

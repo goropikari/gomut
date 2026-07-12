@@ -1,7 +1,7 @@
 .PHONY: fmt lint install install-codex install-dprint install-gitleaks install-dev-tools
 
 GOCACHE ?= /tmp/gomut-gocache
-GOLANGCI_LINT_CACHE ?= /tmp/golangci-lint
+GOLANGCI_LINT_CACHE ?= $(CURDIR)/.cache/golangci-lint
 LOCAL_BIN ?= $(HOME)/.local/bin
 DPRINT_INSTALL ?= $(HOME)/.dprint
 export PATH := $(DPRINT_INSTALL)/bin:$(LOCAL_BIN):$(PATH)
