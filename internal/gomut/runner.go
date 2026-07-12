@@ -65,40 +65,25 @@ func (r *Runner) Run(ctx context.Context, cfg RunConfig) (err error) {
 }
 
 func (r *Runner) runCandidates(ctx context.Context, root string, cfg RunConfig, candidates []Candidate) error {
-	output := io.Writer(r.stdout)
-
-	outputFile, err := openOutput(cfg.OutputPath)
+	jsonlWriter, htmlWriter, cleanup, err := r.openCandidateOutputs(cfg)
 	if err != nil {
 		return err
 	}
 
-	if outputFile != nil {
-		defer outputFile.Close()
-
-		output = outputFile
+	if cleanup != nil {
+		defer cleanup()
 	}
 
-	summary := Summary{}
 	startedAt := time.Now().Format(time.RFC3339)
 	command := strings.Join(os.Args, " ")
 
-	for _, candidate := range candidates {
-		record, result, err := r.processCandidate(ctx, root, cfg, candidate, startedAt, command)
-		if err != nil {
-			return err
-		}
+	summary, records, err := r.runCandidateLoop(ctx, root, cfg, candidates, startedAt, command, jsonlWriter)
+	if err != nil {
+		return err
+	}
 
-		if !cfg.ResultFilter.Matches(result) {
-			continue
-		}
-
-		summary.Total++
-		summary = updateSummary(summary, result)
-		record.Summary = summary
-
-		if err := writeJSONL(output, record); err != nil {
-			return err
-		}
+	if err := r.writeCandidateHTML(root, cfg, htmlWriter, startedAt, command, summary, records); err != nil {
+		return err
 	}
 
 	r.printSummary(summary, summary.Total)
@@ -108,6 +93,131 @@ func (r *Runner) runCandidates(ctx context.Context, root string, cfg RunConfig, 
 	}
 
 	return nil
+}
+
+func (r *Runner) openCandidateOutputs(cfg RunConfig) (io.Writer, io.Writer, func(), error) {
+	var cleanup func()
+
+	jsonlWriter, jsonlCleanup, err := openJSONLOutput(cfg, r.stdout)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	if jsonlCleanup != nil {
+		cleanup = chainCleanup(cleanup, jsonlCleanup)
+	}
+
+	htmlWriter, htmlCleanup, err := openHTMLOutput(cfg, r.stdout)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	if htmlCleanup != nil {
+		cleanup = chainCleanup(cleanup, htmlCleanup)
+	}
+
+	return jsonlWriter, htmlWriter, cleanup, nil
+}
+
+func openJSONLOutput(cfg RunConfig, stdout io.Writer) (io.Writer, func(), error) {
+	if cfg.OutputPath != "" {
+		outputFile, err := openOutput(cfg.OutputPath)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return outputFile, func() {
+			_ = outputFile.Close()
+		}, nil
+	}
+
+	if cfg.HTMLEnabled && cfg.HTMLPath == "" {
+		return nil, nil, nil
+	}
+
+	if cfg.HTMLPath != "" && !cfg.JSONLEnabled {
+		return nil, nil, nil
+	}
+
+	return stdout, nil, nil
+}
+
+func openHTMLOutput(cfg RunConfig, stdout io.Writer) (io.Writer, func(), error) {
+	if !cfg.HTMLEnabled {
+		return nil, nil, nil
+	}
+
+	if cfg.HTMLPath == "" {
+		return stdout, nil, nil
+	}
+
+	outputFile, err := openOutput(cfg.HTMLPath)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return outputFile, func() {
+		_ = outputFile.Close()
+	}, nil
+}
+
+func chainCleanup(existing, next func()) func() {
+	if existing == nil {
+		return next
+	}
+
+	if next == nil {
+		return existing
+	}
+
+	return func() {
+		existing()
+		next()
+	}
+}
+
+func (r *Runner) runCandidateLoop(ctx context.Context, root string, cfg RunConfig, candidates []Candidate, startedAt, command string, jsonlWriter io.Writer) (Summary, []Record, error) {
+	summary := Summary{}
+	records := make([]Record, 0, len(candidates))
+
+	for _, candidate := range candidates {
+		record, result, err := r.processCandidate(ctx, root, cfg, candidate, startedAt, command)
+		if err != nil {
+			return Summary{}, nil, err
+		}
+
+		if !cfg.ResultFilter.Matches(result) {
+			continue
+		}
+
+		summary.Total++
+		summary = updateSummary(summary, result)
+		record.Summary = summary
+		records = append(records, record)
+
+		if jsonlWriter != nil {
+			if err := writeJSONL(jsonlWriter, record); err != nil {
+				return Summary{}, nil, err
+			}
+		}
+	}
+
+	return summary, records, nil
+}
+
+func (r *Runner) writeCandidateHTML(root string, cfg RunConfig, htmlWriter io.Writer, startedAt, command string, summary Summary, records []Record) error {
+	if !cfg.HTMLEnabled {
+		return nil
+	}
+
+	return WriteHTML(htmlWriter, HTMLReportData{
+		Root:      root,
+		Target:    cfg.Target,
+		StartedAt: startedAt,
+		Command:   command,
+		Summary:   summary,
+		Records:   records,
+	})
 }
 
 func openOutput(path string) (*os.File, error) {
@@ -152,6 +262,8 @@ func (r *Runner) buildRecord(target Target, startedAt, command string, candidate
 			Replacement: candidate.Replacement,
 			Result:      result,
 			Message:     message,
+			Start:       candidate.Start,
+			End:         candidate.End,
 		},
 	}
 }

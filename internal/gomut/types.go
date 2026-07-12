@@ -69,6 +69,8 @@ type MutationMetadata struct {
 	Replacement string         `json:"replacement"`
 	Result      MutationResult `json:"result"`
 	Message     string         `json:"message"`
+	Start       int            `json:"-"`
+	End         int            `json:"-"`
 }
 
 type Record struct {
@@ -111,5 +113,8 @@ type RunConfig struct {
 	Target       Target
 	Timeout      time.Duration
 	OutputPath   string
+	JSONLEnabled bool
+	HTMLPath     string
+	HTMLEnabled  bool
 	ResultFilter MutationResultFilter
 }

@@ -2,5 +2,6 @@
 
 .dev-workflow-phase/
 .worktree
+docs/review
 
 .dev-workflow-phase-light/
