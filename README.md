@@ -116,6 +116,8 @@ By default, JSON Lines are written to `stdout`.
 - `--html` by itself writes the HTML report to `stdout`
 - `--html <path>` writes the HTML report to the given file
 - `--html <path>` without `--jsonl` suppresses JSONL output
+- `--progress=auto|on|off` controls mutation progress reporting on `stderr`
+- `--progress` defaults to `auto`, which shows progress in interactive terminals and stays quiet in non-TTY and CI runs
 - `--type` filters emitted mutation results after execution
 - `--type` accepts single values, comma-separated values, and repeated flags
 - `--type` affects both JSONL output and the summary on `stderr`

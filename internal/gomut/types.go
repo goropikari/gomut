@@ -52,6 +52,14 @@ type Target struct {
 	Value string     `json:"value"`
 }
 
+type ProgressMode string
+
+const (
+	ProgressModeAuto ProgressMode = "auto"
+	ProgressModeOn   ProgressMode = "on"
+	ProgressModeOff  ProgressMode = "off"
+)
+
 type Summary struct {
 	Total      int `json:"total"`
 	Killed     int `json:"killed"`
@@ -116,5 +124,6 @@ type RunConfig struct {
 	JSONLEnabled bool
 	HTMLPath     string
 	HTMLEnabled  bool
+	ProgressMode ProgressMode
 	ResultFilter MutationResultFilter
 }

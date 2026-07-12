@@ -116,6 +116,8 @@ JSON Lines はデフォルトで `stdout` に出ます。
 - `--html` だけを指定した場合は HTML レポートを `stdout` に出力
 - `--html <path>` を指定した場合はそのファイルに出力
 - `--html <path>` を指定して `--jsonl` を付けない場合、JSONL 出力は抑止される
+- `--progress=auto|on|off` で mutation の進捗表示を `stderr` に出すか制御できる
+- `--progress` の既定値は `auto` で、対話的な端末では進捗を表示し、非 TTY や CI では静かに動作する
 - `--type` は mutation 実行後の結果を絞り込む
 - `--type` は単一指定、カンマ区切り、繰り返し指定に対応する
 - `--type` は JSONL 出力と `stderr` の summary の両方に反映される

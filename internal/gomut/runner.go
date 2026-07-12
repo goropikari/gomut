@@ -76,11 +76,23 @@ func (r *Runner) runCandidates(ctx context.Context, root string, cfg RunConfig, 
 
 	startedAt := time.Now().Format(time.RFC3339)
 	command := strings.Join(os.Args, " ")
+	progress := NewProgressReporter(ProgressConfig{
+		Mode:        cfg.ProgressMode,
+		Writer:      r.stderr,
+		Interactive: isInteractiveWriter(r.stderr),
+		CI:          isCIEnvironment(),
+		Total:       len(candidates),
+	})
 
-	summary, records, err := r.runCandidateLoop(ctx, root, cfg, candidates, startedAt, command, jsonlWriter)
+	progress.Start(len(candidates))
+	defer progress.Finish()
+
+	summary, records, err := r.runCandidateLoop(ctx, root, cfg, candidates, startedAt, command, jsonlWriter, progress)
 	if err != nil {
 		return err
 	}
+
+	progress.Finish()
 
 	if err := r.writeCandidateHTML(root, cfg, htmlWriter, startedAt, command, summary, records); err != nil {
 		return err
@@ -176,15 +188,19 @@ func chainCleanup(existing, next func()) func() {
 	}
 }
 
-func (r *Runner) runCandidateLoop(ctx context.Context, root string, cfg RunConfig, candidates []Candidate, startedAt, command string, jsonlWriter io.Writer) (Summary, []Record, error) {
+func (r *Runner) runCandidateLoop(ctx context.Context, root string, cfg RunConfig, candidates []Candidate, startedAt, command string, jsonlWriter io.Writer, progress ProgressReporter) (Summary, []Record, error) {
 	summary := Summary{}
 	records := make([]Record, 0, len(candidates))
+	completed := 0
 
 	for _, candidate := range candidates {
 		record, result, err := r.processCandidate(ctx, root, cfg, candidate, startedAt, command)
 		if err != nil {
 			return Summary{}, nil, err
 		}
+
+		completed++
+		progress.Update(completed)
 
 		if !cfg.ResultFilter.Matches(result) {
 			continue
@@ -436,4 +452,22 @@ func trimOutput(out []byte) string {
 	}
 
 	return text
+}
+
+func isInteractiveWriter(w io.Writer) bool {
+	file, ok := w.(*os.File)
+	if !ok {
+		return false
+	}
+
+	info, err := file.Stat()
+	if err != nil {
+		return false
+	}
+
+	return info.Mode()&os.ModeCharDevice != 0
+}
+
+func isCIEnvironment() bool {
+	return os.Getenv("CI") != ""
 }

@@ -79,6 +79,7 @@ func (c *Command) newTestCommand() *cobra.Command {
 	flags.StringSlice("type", nil, "mutation result types to output")
 	flags.Duration("timeout", 10*time.Second, "timeout per mutation")
 	flags.String("config", "", "config file path")
+	flags.String("progress", string(ProgressModeAuto), "progress display mode: auto, on, or off")
 	flags.String("jsonl", "", "jsonl output file path")
 	flags.Lookup("jsonl").NoOptDefVal = ""
 	flags.String("html", "", "html output file path")
@@ -131,6 +132,7 @@ type testRunInputs struct {
 	diffRange      string
 	resultTypes    []string
 	timeout        time.Duration
+	progressMode   string
 	jsonlOutput    string
 	jsonlEnabled   bool
 	htmlOutput     string
@@ -161,6 +163,11 @@ func (c *Command) buildTestRunConfig(cmd *cobra.Command) (RunConfig, error) {
 		return RunConfig{}, err
 	}
 
+	progressMode, err := parseProgressMode(inputs.progressMode)
+	if err != nil {
+		return RunConfig{}, err
+	}
+
 	return RunConfig{
 		Target:       target,
 		Timeout:      inputs.timeout,
@@ -168,6 +175,7 @@ func (c *Command) buildTestRunConfig(cmd *cobra.Command) (RunConfig, error) {
 		JSONLEnabled: inputs.jsonlEnabled,
 		HTMLPath:     inputs.htmlOutput,
 		HTMLEnabled:  inputs.htmlEnabled,
+		ProgressMode: progressMode,
 		ResultFilter: resultFilter,
 	}, nil
 }
@@ -183,6 +191,7 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command) (testRunInputs, error) {
 	allTarget, _ := cmd.Flags().GetBool("all")
 	diffRange, _ := cmd.Flags().GetString("diff")
 	resultTypes, _ := cmd.Flags().GetStringSlice("type")
+	progressMode, _ := cmd.Flags().GetString("progress")
 
 	return testRunInputs{
 		pkgTarget:      pkgTarget,
@@ -190,6 +199,7 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command) (testRunInputs, error) {
 		diffRange:      diffRange,
 		resultTypes:    append([]string(nil), resultTypes...),
 		timeout:        timeout,
+		progressMode:   progressMode,
 		jsonlOutput:    c.jsonlOutput,
 		jsonlEnabled:   c.jsonlEnabled,
 		htmlOutput:     c.htmlOutput,
@@ -285,6 +295,19 @@ func configDiffRange(value *string) string {
 	}
 
 	return "HEAD"
+}
+
+func parseProgressMode(value string) (ProgressMode, error) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", string(ProgressModeAuto):
+		return ProgressModeAuto, nil
+	case string(ProgressModeOn):
+		return ProgressModeOn, nil
+	case string(ProgressModeOff):
+		return ProgressModeOff, nil
+	default:
+		return "", fmt.Errorf("unknown progress mode: %s", value)
+	}
 }
 
 func NormalizeTestArgs(args []string) ([]string, string, bool, string, bool, error) {
