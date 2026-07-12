@@ -70,6 +70,7 @@ func (c *Command) newTestCommand() *cobra.Command {
 	flags.String("package", "", "package import path or pattern")
 	flags.Bool("all", false, "test all packages")
 	flags.String("diff", "", "git diff range or branch name, for example HEAD~1..HEAD or main")
+	flags.StringSlice("type", nil, "mutation result types to output")
 	flags.Duration("timeout", 10*time.Second, "timeout per mutation")
 	flags.String("jsonl", "", "jsonl output file path")
 	flags.Lookup("jsonl").NoOptDefVal = ""
@@ -86,11 +87,17 @@ func (c *Command) runTest(cmd *cobra.Command, args []string) error {
 		pkgTarget, _   = cmd.Flags().GetString("package")
 		allTarget, _   = cmd.Flags().GetBool("all")
 		diffRange, _   = cmd.Flags().GetString("diff")
+		resultTypes, _ = cmd.Flags().GetStringSlice("type")
 		timeout, _     = cmd.Flags().GetDuration("timeout")
 		jsonlOutput, _ = cmd.Flags().GetString("jsonl")
 	)
 	if jsonlOutput == "" {
 		jsonlOutput = c.jsonlOutput
+	}
+
+	resultFilter, err := ParseMutationResultFilter(resultTypes)
+	if err != nil {
+		return err
 	}
 
 	target, err := ResolveTarget(pkgTarget, allTarget, diffRange)
@@ -99,9 +106,10 @@ func (c *Command) runTest(cmd *cobra.Command, args []string) error {
 	}
 
 	cfg := RunConfig{
-		Target:     target,
-		Timeout:    timeout,
-		OutputPath: jsonlOutput,
+		Target:       target,
+		Timeout:      timeout,
+		OutputPath:   jsonlOutput,
+		ResultFilter: resultFilter,
 	}
 
 	runner := NewRunner(c.stdout, c.stderr)
