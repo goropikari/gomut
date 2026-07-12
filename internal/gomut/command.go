@@ -69,7 +69,7 @@ func (c *Command) newTestCommand() *cobra.Command {
 	flags := cmd.Flags()
 	flags.String("package", "", "package import path or pattern")
 	flags.Bool("all", false, "test all packages")
-	flags.String("diff", "", "git diff range, for example HEAD~1..HEAD")
+	flags.String("diff", "", "git diff range or branch name, for example HEAD~1..HEAD or main")
 	flags.Duration("timeout", 10*time.Second, "timeout per mutation")
 	flags.String("jsonl", "", "jsonl output file path")
 	flags.Lookup("jsonl").NoOptDefVal = ""

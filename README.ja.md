@@ -52,6 +52,7 @@ gomut test --all
 
 ```bash
 gomut test --diff HEAD~1..HEAD
+gomut test --diff main
 ```
 
 ### 安全な実行

@@ -17,7 +17,12 @@ type diffHunk struct {
 var diffState = map[string][]diffHunk{}
 
 func diffFiles(ctx context.Context, root, diffRange string) ([]string, error) {
-	cmd := exec.CommandContext(ctx, "git", "diff", "--unified=0", diffRange, "--", "*.go")
+	normalizedRange, err := NormalizeDiffRange(ctx, root, diffRange)
+	if err != nil {
+		return nil, err
+	}
+
+	cmd := exec.CommandContext(ctx, "git", "diff", "--unified=0", normalizedRange, "--", "*.go")
 	cmd.Dir = root
 
 	out, err := cmd.Output()
@@ -26,6 +31,51 @@ func diffFiles(ctx context.Context, root, diffRange string) ([]string, error) {
 	}
 
 	return ParseDiffPatch(string(out))
+}
+
+func NormalizeDiffRange(ctx context.Context, root, diffRange string) (string, error) {
+	if diffRange == "" {
+		return "HEAD", nil
+	}
+
+	if diffRange == "HEAD" || strings.Contains(diffRange, "..") {
+		return diffRange, nil
+	}
+
+	isBranch, err := gitRefExists(ctx, root, "refs/heads/"+diffRange)
+	if err != nil {
+		return "", err
+	}
+
+	if isBranch {
+		return diffRange + "...HEAD", nil
+	}
+
+	isRemoteBranch, err := gitRefExists(ctx, root, "refs/remotes/"+diffRange)
+	if err != nil {
+		return "", err
+	}
+
+	if isRemoteBranch {
+		return diffRange + "...HEAD", nil
+	}
+
+	return diffRange, nil
+}
+
+func gitRefExists(ctx context.Context, root, ref string) (bool, error) {
+	cmd := exec.CommandContext(ctx, "git", "show-ref", "--verify", "--quiet", ref)
+	cmd.Dir = root
+
+	if err := cmd.Run(); err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return true, nil
 }
 
 func ParseDiffPatch(patch string) ([]string, error) {
