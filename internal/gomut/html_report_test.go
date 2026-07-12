@@ -1,4 +1,4 @@
-package gomut
+package gomut_test
 
 import (
 	"bytes"
@@ -6,18 +6,21 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	gomut "gomut/internal/gomut"
 )
 
 func TestWriteHTML(t *testing.T) {
 	t.Run("given mutation records, it renders a self-contained html report", func(t *testing.T) {
 		// Arrange
 		var output bytes.Buffer
-		records := []Record{
+
+		records := []gomut.Record{
 			{
-				Target:    Target{Mode: TargetModePackage, Value: "./sample"},
+				Target:    gomut.Target{Mode: gomut.TargetModePackage, Value: "./sample"},
 				StartedAt: "2026-07-12T01:02:03Z",
 				Command:   "gomut test --package ./sample --html",
-				Summary: Summary{
+				Summary: gomut.Summary{
 					Total:      2,
 					Killed:     1,
 					Lived:      1,
@@ -25,21 +28,21 @@ func TestWriteHTML(t *testing.T) {
 					TimedOut:   0,
 					NotViable:  0,
 				},
-				Mutation: MutationMetadata{
+				Mutation: gomut.MutationMetadata{
 					File:        "sample.go",
 					Line:        18,
-					Kind:        MutationKindComparisonOperator,
+					Kind:        gomut.MutationKindComparisonOperator,
 					Original:    "==",
 					Replacement: "!=",
-					Result:      MutationResultKilled,
+					Result:      gomut.MutationResultKilled,
 					Message:     "killed by tests",
 				},
 			},
 			{
-				Target:    Target{Mode: TargetModePackage, Value: "./sample"},
+				Target:    gomut.Target{Mode: gomut.TargetModePackage, Value: "./sample"},
 				StartedAt: "2026-07-12T01:02:03Z",
 				Command:   "gomut test --package ./sample --html",
-				Summary: Summary{
+				Summary: gomut.Summary{
 					Total:      2,
 					Killed:     1,
 					Lived:      1,
@@ -47,20 +50,20 @@ func TestWriteHTML(t *testing.T) {
 					TimedOut:   0,
 					NotViable:  0,
 				},
-				Mutation: MutationMetadata{
+				Mutation: gomut.MutationMetadata{
 					File:        "sample.go",
 					Line:        24,
-					Kind:        MutationKindLogicalOperator,
+					Kind:        gomut.MutationKindLogicalOperator,
 					Original:    "&&",
 					Replacement: "||",
-					Result:      MutationResultLived,
+					Result:      gomut.MutationResultLived,
 					Message:     "survived",
 				},
 			},
 		}
 
 		// Act
-		err := writeHTML(&output, HTMLReportData{
+		err := gomut.WriteHTML(&output, gomut.HTMLReportData{
 			Target:    records[0].Target,
 			StartedAt: records[0].StartedAt,
 			Command:   records[0].Command,
@@ -70,6 +73,7 @@ func TestWriteHTML(t *testing.T) {
 
 		// Assert
 		require.NoError(t, err)
+
 		rendered := output.String()
 		assert.Contains(t, rendered, "<!doctype html")
 		assert.Contains(t, rendered, "2026-07-12T01:02:03Z")

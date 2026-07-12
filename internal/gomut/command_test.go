@@ -250,6 +250,7 @@ func TestCommandRunHTMLOutput(t *testing.T) {
 		require.Error(t, err)
 		assert.Empty(t, stdout)
 		assert.NotEmpty(t, stderr)
+
 		_, statErr := os.Stat(htmlPath)
 		assert.Error(t, statErr)
 	})

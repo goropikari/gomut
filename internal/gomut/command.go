@@ -101,6 +101,7 @@ func (c *Command) runTest(cmd *cobra.Command, args []string) error {
 	if jsonlOutput == "" {
 		jsonlOutput = c.jsonlOutput
 	}
+
 	if htmlOutput == "" {
 		htmlOutput = c.htmlOutput
 	}
@@ -131,44 +132,69 @@ func (c *Command) runTest(cmd *cobra.Command, args []string) error {
 
 func NormalizeTestArgs(args []string) ([]string, string, string, bool, error) {
 	normalized := make([]string, 0, len(args))
-	jsonlOutput := ""
-	htmlOutput := ""
-	htmlEnabled := false
+	state := normalizedTestArgs{}
 
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
-		switch {
-		case arg == "--jsonl" || arg == "-jsonl":
-			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
-				jsonlOutput = args[i+1]
-				i++
-			} else {
-				jsonlOutput = ""
-			}
-		case strings.HasPrefix(arg, "--jsonl="):
-			jsonlOutput = strings.TrimPrefix(arg, "--jsonl=")
-		case strings.HasPrefix(arg, "-jsonl="):
-			jsonlOutput = strings.TrimPrefix(arg, "-jsonl=")
-		case arg == "--html" || arg == "-html":
-			htmlEnabled = true
-			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
-				htmlOutput = args[i+1]
-				i++
-			} else {
-				htmlOutput = ""
-			}
-		case strings.HasPrefix(arg, "--html="):
-			htmlEnabled = true
-			htmlOutput = strings.TrimPrefix(arg, "--html=")
-		case strings.HasPrefix(arg, "-html="):
-			htmlEnabled = true
-			htmlOutput = strings.TrimPrefix(arg, "-html=")
-		default:
-			normalized = append(normalized, arg)
+
+		consumed, handled := state.consumeOutputFlag(args, i, arg)
+		if handled {
+			i += consumed
+			continue
 		}
+
+		normalized = append(normalized, arg)
 	}
 
-	return normalized, jsonlOutput, htmlOutput, htmlEnabled, nil
+	return normalized, state.jsonlOutput, state.htmlOutput, state.htmlEnabled, nil
+}
+
+type normalizedTestArgs struct {
+	jsonlOutput string
+	htmlOutput  string
+	htmlEnabled bool
+}
+
+func (n *normalizedTestArgs) consumeOutputFlag(args []string, i int, arg string) (int, bool) {
+	switch {
+	case arg == "--jsonl" || arg == "-jsonl":
+		output, consumed := consumeFlagValue(args, i)
+		n.jsonlOutput = output
+
+		return consumed, true
+	case strings.HasPrefix(arg, "--jsonl="):
+		n.jsonlOutput = strings.TrimPrefix(arg, "--jsonl=")
+		return 0, true
+	case strings.HasPrefix(arg, "-jsonl="):
+		n.jsonlOutput = strings.TrimPrefix(arg, "-jsonl=")
+		return 0, true
+	case arg == "--html" || arg == "-html":
+		n.htmlEnabled = true
+		output, consumed := consumeFlagValue(args, i)
+		n.htmlOutput = output
+
+		return consumed, true
+	case strings.HasPrefix(arg, "--html="):
+		n.htmlEnabled = true
+		n.htmlOutput = strings.TrimPrefix(arg, "--html=")
+
+		return 0, true
+	case strings.HasPrefix(arg, "-html="):
+		n.htmlEnabled = true
+		n.htmlOutput = strings.TrimPrefix(arg, "-html=")
+
+		return 0, true
+	default:
+		return 0, false
+	}
+}
+
+func consumeFlagValue(args []string, i int) (string, int) {
+	if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+		return args[i+1], 1
+	}
+
+	return "", 0
 }
 
 func ResolveTarget(pkg string, all bool, diffRange string) (Target, error) {

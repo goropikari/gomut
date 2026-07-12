@@ -16,8 +16,8 @@ type HTMLReportData struct {
 	Records   []Record
 }
 
-// writeHTML renders a self-contained HTML report for the provided mutation records.
-func writeHTML(w io.Writer, report HTMLReportData) error {
+// WriteHTML renders a self-contained HTML report for the provided mutation records.
+func WriteHTML(w io.Writer, report HTMLReportData) error {
 	view := buildHTMLReportView(report)
 
 	tmpl, err := template.New("html-report").Parse(htmlTemplateSource)
@@ -89,11 +89,13 @@ func formatMutationScore(summary Summary) string {
 	}
 
 	score := float64(summary.Killed) / float64(denominator) * 100
+
 	return fmt.Sprintf("%.1f%%", score)
 }
 
 func resultSlug(result string) string {
 	slug := strings.ToLower(result)
 	slug = strings.ReplaceAll(slug, " ", "-")
+
 	return slug
 }
