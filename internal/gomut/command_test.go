@@ -167,4 +167,27 @@ func TestRecordJSONIncludesMutationReplacementDetails(t *testing.T) {
 		require.NoError(t, err)
 		assert.JSONEq(t, `{"target":{"mode":"package","value":"./sample"},"started_at":"","command":"","summary":{"total":0,"killed":0,"lived":0,"not_covered":0,"timed_out":0,"not_viable":0},"mutation":{"file":"sample.go","line":12,"kind":"control_flow","original":"ready","replacement":"!ready","result":"KILLED","message":"killed by tests"}}`, string(data))
 	})
+
+	t.Run("given a return mutation record, it serializes the return kind", func(t *testing.T) {
+		// Arrange
+		record := gomut.Record{
+			Target: gomut.Target{Mode: gomut.TargetModePackage, Value: "./sample"},
+			Mutation: gomut.MutationMetadata{
+				File:        "sample.go",
+				Line:        22,
+				Kind:        gomut.MutationKindReturn,
+				Original:    "true",
+				Replacement: "false",
+				Result:      gomut.MutationResultLived,
+				Message:     "ok",
+			},
+		}
+
+		// Act
+		data, err := json.Marshal(record)
+
+		// Assert
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"target":{"mode":"package","value":"./sample"},"started_at":"","command":"","summary":{"total":0,"killed":0,"lived":0,"not_covered":0,"timed_out":0,"not_viable":0},"mutation":{"file":"sample.go","line":22,"kind":"return","original":"true","replacement":"false","result":"LIVED","message":"ok"}}`, string(data))
+	})
 }

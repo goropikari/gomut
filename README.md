@@ -90,6 +90,8 @@ mutation 情報には `original` と `replacement` も含まれます。
 | 代入演算子                        | `                                                                                 |
 | 代入演算子                        | `^=` -> `&=`                                                                      |
 | 代入演算子                        | `&^=` -> `                                                                        |
+| return                            | `return true` -> `return false`                                                   |
+| return                            | `return false` -> `return true`                                                   |
 | guard clause の単純な return 変異 | `return x` の `x` を `nil` 以外の単純な識別子として扱い、別の return 値に差し替え |
 
 未実装のものは今後追加できます。

@@ -70,6 +70,24 @@ func TestIsAdult(t *testing.T) {
 	})
 }
 
+func TestIsAllowed(t *testing.T) {
+	t.Run("given approval, it reports true", func(t *testing.T) {
+		// Arrange
+		got := sample.IsAllowed(true)
+
+		// Assert
+		assert.True(t, got)
+	})
+
+	t.Run("given no approval, it reports false", func(t *testing.T) {
+		// Arrange
+		got := sample.IsAllowed(false)
+
+		// Assert
+		assert.False(t, got)
+	})
+}
+
 func TestEnableFlag(t *testing.T) {
 	t.Run("given a flag to enable, it returns the combined mask", func(t *testing.T) {
 		// Arrange

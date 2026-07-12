@@ -84,6 +84,7 @@ func SetMask(mask uint8) uint8 {
 		assert.True(t, kinds[gomut.MutationKindAssignmentBitwise], "expected assignment bitwise mutation to be discovered")
 		assert.True(t, kinds[gomut.MutationKindGuardClause], "expected guard clause mutation to remain available")
 		assert.True(t, kinds[gomut.MutationKindControlFlow], "expected control flow mutation to be discovered")
+		assert.True(t, kinds[gomut.MutationKindReturn], "expected return mutation to be discovered")
 
 		require.NotNil(t, controlFlowCandidate)
 		assert.Contains(t, controlFlowCandidate.File, filepath.ToSlash(filepath.Join("sample", "sample.go")))

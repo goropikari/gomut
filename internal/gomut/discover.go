@@ -180,6 +180,25 @@ func mutationFromReturnStmt(fset *token.FileSet, src []byte, file, pkg string, n
 		return Candidate{}, false
 	}
 
+	if ident.Name == "true" || ident.Name == "false" {
+		replacement := "false"
+		if ident.Name == "false" {
+			replacement = "true"
+		}
+
+		return Candidate{
+			File:        repoRel(file),
+			Line:        line,
+			Kind:        MutationKindReturn,
+			Original:    ident.Name,
+			Replacement: replacement,
+			Start:       start,
+			End:         end,
+			PackagePath: pkg,
+			Covered:     lineCovered(coverage, line),
+		}, true
+	}
+
 	return Candidate{
 		File:        repoRel(file),
 		Line:        line,
