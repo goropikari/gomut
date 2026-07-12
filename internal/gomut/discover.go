@@ -153,12 +153,12 @@ func discoverFileCandidates(root, pkg, file string, target Target, coverage map[
 		return nil, err
 	}
 
-	covered := coverage[repoRel(file)]
+	covered := coverage[repoRel(root, file)]
 
 	var candidates []Candidate
 
 	ast.Inspect(astFile, func(n ast.Node) bool {
-		if candidate, ok := mutationCandidateFromNode(fset, src, file, pkg, n, target, covered); ok {
+		if candidate, ok := mutationCandidateFromNode(root, fset, src, file, pkg, n, target, covered); ok {
 			candidates = append(candidates, candidate)
 		}
 
@@ -168,8 +168,8 @@ func discoverFileCandidates(root, pkg, file string, target Target, coverage map[
 	return candidates, nil
 }
 
-func mutationCandidateFromNode(fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
-	handlers := []func(*token.FileSet, []byte, string, string, ast.Node, Target, FileCoverage) (Candidate, bool){
+func mutationCandidateFromNode(root string, fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
+	handlers := []func(string, *token.FileSet, []byte, string, string, ast.Node, Target, FileCoverage) (Candidate, bool){
 		mutationFromBinaryNode,
 		mutationFromBooleanNode,
 		mutationFromBasicLitNode,
@@ -182,7 +182,7 @@ func mutationCandidateFromNode(fset *token.FileSet, src []byte, file, pkg string
 	}
 
 	for _, handler := range handlers {
-		if candidate, ok := handler(fset, src, file, pkg, node, target, coverage); ok {
+		if candidate, ok := handler(root, fset, src, file, pkg, node, target, coverage); ok {
 			return candidate, true
 		}
 	}
@@ -190,92 +190,92 @@ func mutationCandidateFromNode(fset *token.FileSet, src []byte, file, pkg string
 	return Candidate{}, false
 }
 
-func mutationFromBinaryNode(fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
+func mutationFromBinaryNode(root string, fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
 	binaryNode, ok := node.(*ast.BinaryExpr)
 	if !ok {
 		return Candidate{}, false
 	}
 
-	if candidate, ok := mutationFromNilCheckBinaryExpr(fset, src, file, pkg, binaryNode, target, coverage); ok {
+	if candidate, ok := mutationFromNilCheckBinaryExpr(root, fset, src, file, pkg, binaryNode, target, coverage); ok {
 		return candidate, true
 	}
 
-	return mutationFromBinaryExpr(fset, src, file, pkg, binaryNode, target, coverage)
+	return mutationFromBinaryExpr(root, fset, src, file, pkg, binaryNode, target, coverage)
 }
 
-func mutationFromBooleanNode(fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
+func mutationFromBooleanNode(root string, fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
 	ident, ok := node.(*ast.Ident)
 	if !ok {
 		return Candidate{}, false
 	}
 
-	return mutationFromBooleanLiteral(fset, src, file, pkg, ident, target, coverage)
+	return mutationFromBooleanLiteral(root, fset, src, file, pkg, ident, target, coverage)
 }
 
-func mutationFromBasicLitNode(fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
+func mutationFromBasicLitNode(root string, fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
 	basicLit, ok := node.(*ast.BasicLit)
 	if !ok {
 		return Candidate{}, false
 	}
 
-	return mutationFromBasicLit(fset, src, file, pkg, basicLit, target, coverage)
+	return mutationFromBasicLit(root, fset, src, file, pkg, basicLit, target, coverage)
 }
 
-func mutationFromUnaryNode(fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
+func mutationFromUnaryNode(root string, fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
 	unaryExpr, ok := node.(*ast.UnaryExpr)
 	if !ok {
 		return Candidate{}, false
 	}
 
-	return mutationFromUnaryExpr(fset, src, file, pkg, unaryExpr, target, coverage)
+	return mutationFromUnaryExpr(root, fset, src, file, pkg, unaryExpr, target, coverage)
 }
 
-func mutationFromAssignNode(fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
+func mutationFromAssignNode(root string, fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
 	assignStmt, ok := node.(*ast.AssignStmt)
 	if !ok {
 		return Candidate{}, false
 	}
 
-	return mutationFromAssignStmt(fset, src, file, pkg, assignStmt, target, coverage)
+	return mutationFromAssignStmt(root, fset, src, file, pkg, assignStmt, target, coverage)
 }
 
-func mutationFromIncDecNode(fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
+func mutationFromIncDecNode(root string, fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
 	incDecStmt, ok := node.(*ast.IncDecStmt)
 	if !ok {
 		return Candidate{}, false
 	}
 
-	return mutationFromIncDecStmt(fset, src, file, pkg, incDecStmt, target, coverage)
+	return mutationFromIncDecStmt(root, fset, src, file, pkg, incDecStmt, target, coverage)
 }
 
-func mutationFromIfNode(fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
+func mutationFromIfNode(root string, fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
 	ifStmt, ok := node.(*ast.IfStmt)
 	if !ok {
 		return Candidate{}, false
 	}
 
-	return mutationFromConditionExpr(fset, src, file, pkg, ifStmt.Cond, MutationKindControlFlow, target, coverage)
+	return mutationFromConditionExpr(root, fset, src, file, pkg, ifStmt.Cond, MutationKindControlFlow, target, coverage)
 }
 
-func mutationFromSwitchNode(fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
+func mutationFromSwitchNode(root string, fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
 	switchStmt, ok := node.(*ast.SwitchStmt)
 	if !ok {
 		return Candidate{}, false
 	}
 
-	return mutationFromConditionExpr(fset, src, file, pkg, switchStmt.Tag, MutationKindSwitchCondition, target, coverage)
+	return mutationFromConditionExpr(root, fset, src, file, pkg, switchStmt.Tag, MutationKindSwitchCondition, target, coverage)
 }
 
-func mutationFromReturnNode(fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
+func mutationFromReturnNode(root string, fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target Target, coverage FileCoverage) (Candidate, bool) {
 	returnStmt, ok := node.(*ast.ReturnStmt)
 	if !ok {
 		return Candidate{}, false
 	}
 
-	return mutationFromReturnStmt(fset, src, file, pkg, returnStmt, target, coverage)
+	return mutationFromReturnStmt(root, fset, src, file, pkg, returnStmt, target, coverage)
 }
 
-func mutationFromBooleanLiteral(fset *token.FileSet, src []byte, file, pkg string, node *ast.Ident, target Target, coverage FileCoverage) (Candidate, bool) {
+func mutationFromBooleanLiteral(root string, fset *token.FileSet, src []byte, file, pkg string, node *ast.Ident, target Target, coverage FileCoverage) (Candidate, bool) {
 	if node == nil || (node.Name != "true" && node.Name != "false") {
 		return Candidate{}, false
 	}
@@ -296,7 +296,7 @@ func mutationFromBooleanLiteral(fset *token.FileSet, src []byte, file, pkg strin
 	}
 
 	return Candidate{
-		File:        repoRel(file),
+		File:        repoRel(root, file),
 		Line:        line,
 		Kind:        MutationKindBooleanLiteral,
 		Original:    node.Name,
@@ -308,7 +308,7 @@ func mutationFromBooleanLiteral(fset *token.FileSet, src []byte, file, pkg strin
 	}, true
 }
 
-func mutationFromBasicLit(fset *token.FileSet, src []byte, file, pkg string, node *ast.BasicLit, target Target, coverage FileCoverage) (Candidate, bool) {
+func mutationFromBasicLit(root string, fset *token.FileSet, src []byte, file, pkg string, node *ast.BasicLit, target Target, coverage FileCoverage) (Candidate, bool) {
 	if node == nil {
 		return Candidate{}, false
 	}
@@ -334,7 +334,7 @@ func mutationFromBasicLit(fset *token.FileSet, src []byte, file, pkg string, nod
 	end := start + len(node.Value)
 
 	return Candidate{
-		File:        repoRel(file),
+		File:        repoRel(root, file),
 		Line:        line,
 		Kind:        spec.kind,
 		Original:    node.Value,
@@ -346,7 +346,7 @@ func mutationFromBasicLit(fset *token.FileSet, src []byte, file, pkg string, nod
 	}, true
 }
 
-func mutationFromUnaryExpr(fset *token.FileSet, src []byte, file, pkg string, node *ast.UnaryExpr, target Target, coverage FileCoverage) (Candidate, bool) {
+func mutationFromUnaryExpr(root string, fset *token.FileSet, src []byte, file, pkg string, node *ast.UnaryExpr, target Target, coverage FileCoverage) (Candidate, bool) {
 	if node == nil {
 		return Candidate{}, false
 	}
@@ -369,7 +369,7 @@ func mutationFromUnaryExpr(fset *token.FileSet, src []byte, file, pkg string, no
 	}
 
 	return Candidate{
-		File:        repoRel(file),
+		File:        repoRel(root, file),
 		Line:        line,
 		Kind:        spec.kind,
 		Original:    string(src[pos.Offset:end.Offset]),
@@ -381,7 +381,7 @@ func mutationFromUnaryExpr(fset *token.FileSet, src []byte, file, pkg string, no
 	}, true
 }
 
-func mutationFromNilCheckBinaryExpr(fset *token.FileSet, src []byte, file, pkg string, node *ast.BinaryExpr, target Target, coverage FileCoverage) (Candidate, bool) {
+func mutationFromNilCheckBinaryExpr(root string, fset *token.FileSet, src []byte, file, pkg string, node *ast.BinaryExpr, target Target, coverage FileCoverage) (Candidate, bool) {
 	if node.Op != token.EQL && node.Op != token.NEQ {
 		return Candidate{}, false
 	}
@@ -406,7 +406,7 @@ func mutationFromNilCheckBinaryExpr(fset *token.FileSet, src []byte, file, pkg s
 	}
 
 	return Candidate{
-		File:        repoRel(file),
+		File:        repoRel(root, file),
 		Line:        line,
 		Kind:        MutationKindNilCheck,
 		Original:    node.Op.String(),
@@ -418,7 +418,7 @@ func mutationFromNilCheckBinaryExpr(fset *token.FileSet, src []byte, file, pkg s
 	}, true
 }
 
-func mutationFromBinaryExpr(fset *token.FileSet, src []byte, file, pkg string, node *ast.BinaryExpr, target Target, coverage FileCoverage) (Candidate, bool) {
+func mutationFromBinaryExpr(root string, fset *token.FileSet, src []byte, file, pkg string, node *ast.BinaryExpr, target Target, coverage FileCoverage) (Candidate, bool) {
 	spec, ok := binaryMutationSpecs[node.Op]
 	if !ok {
 		return Candidate{}, false
@@ -435,7 +435,7 @@ func mutationFromBinaryExpr(fset *token.FileSet, src []byte, file, pkg string, n
 	end := start + len(node.Op.String())
 
 	return Candidate{
-		File:        repoRel(file),
+		File:        repoRel(root, file),
 		Line:        line,
 		Kind:        spec.kind,
 		Original:    node.Op.String(),
@@ -447,7 +447,7 @@ func mutationFromBinaryExpr(fset *token.FileSet, src []byte, file, pkg string, n
 	}, true
 }
 
-func mutationFromReturnStmt(fset *token.FileSet, src []byte, file, pkg string, node *ast.ReturnStmt, target Target, coverage FileCoverage) (Candidate, bool) {
+func mutationFromReturnStmt(root string, fset *token.FileSet, src []byte, file, pkg string, node *ast.ReturnStmt, target Target, coverage FileCoverage) (Candidate, bool) {
 	if len(node.Results) != 1 {
 		return Candidate{}, false
 	}
@@ -480,7 +480,7 @@ func mutationFromReturnStmt(fset *token.FileSet, src []byte, file, pkg string, n
 		}
 
 		return Candidate{
-			File:        repoRel(file),
+			File:        repoRel(root, file),
 			Line:        line,
 			Kind:        MutationKindReturn,
 			Original:    ident.Name,
@@ -493,7 +493,7 @@ func mutationFromReturnStmt(fset *token.FileSet, src []byte, file, pkg string, n
 	}
 
 	return Candidate{
-		File:        repoRel(file),
+		File:        repoRel(root, file),
 		Line:        line,
 		Kind:        MutationKindGuardClause,
 		Original:    ident.Name,
@@ -505,7 +505,7 @@ func mutationFromReturnStmt(fset *token.FileSet, src []byte, file, pkg string, n
 	}, true
 }
 
-func mutationFromAssignStmt(fset *token.FileSet, src []byte, file, pkg string, node *ast.AssignStmt, target Target, coverage FileCoverage) (Candidate, bool) {
+func mutationFromAssignStmt(root string, fset *token.FileSet, src []byte, file, pkg string, node *ast.AssignStmt, target Target, coverage FileCoverage) (Candidate, bool) {
 	spec, ok := assignMutationSpecs[node.Tok]
 	if !ok {
 		spec, ok = arithmeticAssignMutationSpecs[node.Tok]
@@ -530,7 +530,7 @@ func mutationFromAssignStmt(fset *token.FileSet, src []byte, file, pkg string, n
 	end := start + len(node.Tok.String())
 
 	return Candidate{
-		File:        repoRel(file),
+		File:        repoRel(root, file),
 		Line:        line,
 		Kind:        spec.kind,
 		Original:    node.Tok.String(),
@@ -542,7 +542,7 @@ func mutationFromAssignStmt(fset *token.FileSet, src []byte, file, pkg string, n
 	}, true
 }
 
-func mutationFromIncDecStmt(fset *token.FileSet, src []byte, file, pkg string, node *ast.IncDecStmt, target Target, coverage FileCoverage) (Candidate, bool) {
+func mutationFromIncDecStmt(root string, fset *token.FileSet, src []byte, file, pkg string, node *ast.IncDecStmt, target Target, coverage FileCoverage) (Candidate, bool) {
 	if node == nil {
 		return Candidate{}, false
 	}
@@ -563,7 +563,7 @@ func mutationFromIncDecStmt(fset *token.FileSet, src []byte, file, pkg string, n
 	}
 
 	return Candidate{
-		File:        repoRel(file),
+		File:        repoRel(root, file),
 		Line:        line,
 		Kind:        MutationKindIncDec,
 		Original:    node.Tok.String(),
@@ -581,7 +581,7 @@ func isNilExpr(expr ast.Expr) bool {
 }
 
 // mutationFromIfStmt reserves the control-flow mutation hook for if-condition inversion.
-func mutationFromConditionExpr(fset *token.FileSet, src []byte, file, pkg string, expr ast.Expr, kind MutationKind, target Target, coverage FileCoverage) (Candidate, bool) {
+func mutationFromConditionExpr(root string, fset *token.FileSet, src []byte, file, pkg string, expr ast.Expr, kind MutationKind, target Target, coverage FileCoverage) (Candidate, bool) {
 	if expr == nil {
 		return Candidate{}, false
 	}
@@ -602,7 +602,7 @@ func mutationFromConditionExpr(fset *token.FileSet, src []byte, file, pkg string
 	replacement := negateCondition(expr, original)
 
 	return Candidate{
-		File:        repoRel(file),
+		File:        repoRel(root, file),
 		Line:        line,
 		Kind:        kind,
 		Original:    original,

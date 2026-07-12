@@ -108,7 +108,8 @@ type Result struct {
 }
 
 type RunConfig struct {
-	Target     Target
-	Timeout    time.Duration
-	OutputPath string
+	Target      Target
+	Timeout     time.Duration
+	OutputPath  string
+	UseWorktree bool
 }

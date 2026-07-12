@@ -113,7 +113,7 @@ func modulePath(root string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
-func readCoverage(path, modulePath string) (map[string]FileCoverage, error) {
+func readCoverage(root, path, modulePath string) (map[string]FileCoverage, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -141,14 +141,14 @@ func readCoverage(path, modulePath string) (map[string]FileCoverage, error) {
 			continue
 		}
 
-		normalized := coveragePath(file, modulePath)
+		normalized := coveragePath(root, file, modulePath)
 		coverage[normalized] = appendCoverageBlock(coverage[normalized], block, count > 0)
 	}
 
 	return coverage, nil
 }
 
-func coveragePath(path, modulePath string) string {
+func coveragePath(root, path, modulePath string) string {
 	if modulePath != "" {
 		prefix := modulePath + "/"
 		if strings.HasPrefix(path, prefix) {
@@ -156,7 +156,7 @@ func coveragePath(path, modulePath string) string {
 		}
 	}
 
-	return repoRel(path)
+	return repoRel(root, path)
 }
 
 func parseCoverageBlock(spec string) (string, CoverageRange) {

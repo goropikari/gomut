@@ -21,11 +21,31 @@ func NewRunner(stdout, stderr io.Writer) *Runner {
 	return &Runner{stdout: stdout, stderr: stderr}
 }
 
-func (r *Runner) Run(ctx context.Context, cfg RunConfig) error {
+func (r *Runner) Run(ctx context.Context, cfg RunConfig) (err error) {
 	root, err := os.Getwd()
 	if err != nil {
 		return err
 	}
+
+	cleanup := func() error { return nil }
+	if cfg.UseWorktree {
+		fmt.Fprintln(r.stderr, "Creating temporary git worktree...")
+		root, cleanup, err = prepareWorktree(ctx, root)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(r.stderr, "Using temporary worktree: %s\n", root)
+	}
+
+	defer func() {
+		if cleanup == nil {
+			return
+		}
+
+		if cleanupErr := cleanup(); cleanupErr != nil && err == nil {
+			err = cleanupErr
+		}
+	}()
 
 	packages, err := r.resolvePackages(ctx, root, cfg.Target)
 	if err != nil {
@@ -215,7 +235,7 @@ func (r *Runner) runBaseline(ctx context.Context, root string, packages []string
 			return nil, fmt.Errorf("baseline go test failed for %s: %w\n%s", pkg, err, string(out))
 		}
 
-		coverage, err := readCoverage(coverProfile, modulePath)
+		coverage, err := readCoverage(root, coverProfile, modulePath)
 		if err != nil {
 			return nil, err
 		}
