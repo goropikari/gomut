@@ -1,4 +1,5 @@
 /gomut
+.cache/
 
 .dev-workflow-phase/
 .worktree
