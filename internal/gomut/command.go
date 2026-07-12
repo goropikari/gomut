@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -145,9 +146,14 @@ func writeJSONL(w io.Writer, record Record) error {
 }
 
 func repoRel(path string) string {
-	rel, err := filepath.Rel(".", path)
+	wd, err := os.Getwd()
 	if err != nil {
-		return path
+		return filepath.ToSlash(path)
+	}
+
+	rel, err := filepath.Rel(wd, path)
+	if err != nil {
+		return filepath.ToSlash(path)
 	}
 
 	return filepath.ToSlash(rel)

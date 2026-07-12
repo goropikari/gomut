@@ -100,7 +100,20 @@ func packageForFile(root, file string) (string, error) {
 	return packageForDir(root, filepath.Dir(resolveSourcePath(root, file)))
 }
 
-func readCoverage(path string) (map[string]FileCoverage, error) {
+func modulePath(root string) (string, error) {
+	cmd := exec.Command("go", "list", "-m", "-f", "{{.Path}}")
+	cmd.Dir = root
+	cmd.Env = goCommandEnv()
+
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(out)), nil
+}
+
+func readCoverage(path, modulePath string) (map[string]FileCoverage, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -128,10 +141,22 @@ func readCoverage(path string) (map[string]FileCoverage, error) {
 			continue
 		}
 
-		coverage[repoRel(file)] = appendCoverageBlock(coverage[repoRel(file)], block, count > 0)
+		normalized := coveragePath(file, modulePath)
+		coverage[normalized] = appendCoverageBlock(coverage[normalized], block, count > 0)
 	}
 
 	return coverage, nil
+}
+
+func coveragePath(path, modulePath string) string {
+	if modulePath != "" {
+		prefix := modulePath + "/"
+		if strings.HasPrefix(path, prefix) {
+			return filepath.ToSlash(strings.TrimPrefix(path, prefix))
+		}
+	}
+
+	return repoRel(path)
 }
 
 func parseCoverageBlock(spec string) (string, CoverageRange) {

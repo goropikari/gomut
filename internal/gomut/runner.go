@@ -199,6 +199,11 @@ func (r *Runner) resolvePackages(ctx context.Context, root string, target Target
 func (r *Runner) runBaseline(ctx context.Context, root string, packages []string) (map[string]FileCoverage, error) {
 	merged := map[string]FileCoverage{}
 
+	modulePath, err := modulePath(root)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, pkg := range packages {
 		coverProfile := filepath.Join(os.TempDir(), strings.ReplaceAll("gomut-"+strings.ReplaceAll(pkg, "/", "-"), "...", "all")+".cover")
 		cmd := exec.CommandContext(ctx, "go", "test", "-coverprofile", coverProfile, pkg)
@@ -210,7 +215,7 @@ func (r *Runner) runBaseline(ctx context.Context, root string, packages []string
 			return nil, fmt.Errorf("baseline go test failed for %s: %w\n%s", pkg, err, string(out))
 		}
 
-		coverage, err := readCoverage(coverProfile)
+		coverage, err := readCoverage(coverProfile, modulePath)
 		if err != nil {
 			return nil, err
 		}

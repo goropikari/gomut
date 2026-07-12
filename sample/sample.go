@@ -36,6 +36,16 @@ func EnableFlag(mask, flag uint8) uint8 {
 	return mask
 }
 
+// NeedsReview reports whether the item should be manually reviewed.
+// It is intentionally left without a sample test so gomut can report NOT COVERED.
+func NeedsReview(reviewed bool, score int) bool {
+	if !reviewed {
+		return true
+	}
+
+	return score < 50
+}
+
 // ValidateQuantity returns an error for negative quantities.
 func ValidateQuantity(quantity int) error {
 	if quantity < 0 {
