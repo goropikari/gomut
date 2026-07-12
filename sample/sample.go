@@ -172,3 +172,13 @@ func ApprovalLabel(approved bool) string {
 		return "blocked"
 	}
 }
+
+//gomut:ignore
+// IgnoredThreshold reports whether a score is within the ignored sample range.
+func IgnoredThreshold(score int) bool {
+	if score < 50 {
+		return true
+	}
+
+	return false
+}

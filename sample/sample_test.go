@@ -257,6 +257,24 @@ func TestValidateQuantity(t *testing.T) {
 	})
 }
 
+func TestIgnoredThreshold(t *testing.T) {
+	t.Run("given a low score, it reports true", func(t *testing.T) {
+		// Arrange
+		got := sample.IgnoredThreshold(49)
+
+		// Assert
+		assert.True(t, got)
+	})
+
+	t.Run("given a high score, it reports false", func(t *testing.T) {
+		// Arrange
+		got := sample.IgnoredThreshold(50)
+
+		// Assert
+		assert.False(t, got)
+	})
+}
+
 func TestDefaultRetryLimit(t *testing.T) {
 	t.Run("given no input, it returns the configured retry limit", func(t *testing.T) {
 		// Arrange
