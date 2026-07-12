@@ -4,18 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
 type Command struct {
-	stdout io.Writer
-	stderr io.Writer
+	stdout      io.Writer
+	stderr      io.Writer
+	jsonlOutput string
 }
 
 func NewCommand(stdout, stderr io.Writer) *Command {
@@ -23,59 +25,88 @@ func NewCommand(stdout, stderr io.Writer) *Command {
 }
 
 func (c *Command) Run(ctx context.Context, args []string) error {
-	if len(args) == 0 {
-		return c.printUsage()
-	}
-
-	switch args[0] {
-	case "test":
-		return c.runTest(ctx, args[1:])
-	case "help", "-h", "--help":
-		return c.printUsage()
-	default:
-		return fmt.Errorf("unknown command %q", args[0])
-	}
-}
-
-func (c *Command) printUsage() error {
-	_, err := fmt.Fprint(c.stdout, usageText)
-	return err
-}
-
-func (c *Command) runTest(ctx context.Context, args []string) error {
-	fs := flag.NewFlagSet("test", flag.ContinueOnError)
-	fs.SetOutput(io.Discard)
-
-	var (
-		pkgTarget = fs.String("package", "", "package import path or pattern")
-		allTarget = fs.Bool("all", false, "test all packages")
-		diffRange = fs.String("diff", "", "git diff range, for example HEAD~1..HEAD")
-		timeout   = fs.Duration("timeout", 10*time.Second, "timeout per mutation")
-	)
-
-	parsedArgs, jsonlOutput, err := NormalizeTestArgs(args)
+	normalizedArgs, jsonlOutput, err := NormalizeTestArgs(args)
 	if err != nil {
 		return err
 	}
 
-	if err := fs.Parse(parsedArgs); err != nil {
-		return err
+	c.jsonlOutput = jsonlOutput
+
+	root := c.newRootCommand()
+	root.SetOut(c.stdout)
+	root.SetErr(c.stderr)
+	root.SetArgs(normalizedArgs)
+
+	return root.ExecuteContext(ctx)
+}
+
+func (c *Command) newRootCommand() *cobra.Command {
+	root := &cobra.Command{
+		Use:           "gomut",
+		SilenceErrors: true,
+		SilenceUsage:  true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmd.Help()
+		},
 	}
 
-	target, err := ResolveTarget(*pkgTarget, *allTarget, *diffRange)
+	root.AddCommand(c.newTestCommand())
+
+	return root
+}
+
+func (c *Command) newTestCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:           "test",
+		Short:         "Run mutation testing",
+		SilenceErrors: true,
+		SilenceUsage:  true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return c.runTest(cmd, args)
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.String("package", "", "package import path or pattern")
+	flags.Bool("all", false, "test all packages")
+	flags.String("diff", "", "git diff range, for example HEAD~1..HEAD")
+	flags.Duration("timeout", 10*time.Second, "timeout per mutation")
+	flags.String("jsonl", "", "jsonl output file path")
+	flags.Lookup("jsonl").NoOptDefVal = ""
+
+	return cmd
+}
+
+func (c *Command) runTest(cmd *cobra.Command, args []string) error {
+	if len(args) > 0 {
+		return fmt.Errorf("unexpected arguments: %s", strings.Join(args, " "))
+	}
+
+	var (
+		pkgTarget, _   = cmd.Flags().GetString("package")
+		allTarget, _   = cmd.Flags().GetBool("all")
+		diffRange, _   = cmd.Flags().GetString("diff")
+		timeout, _     = cmd.Flags().GetDuration("timeout")
+		jsonlOutput, _ = cmd.Flags().GetString("jsonl")
+	)
+	if jsonlOutput == "" {
+		jsonlOutput = c.jsonlOutput
+	}
+
+	target, err := ResolveTarget(pkgTarget, allTarget, diffRange)
 	if err != nil {
 		return err
 	}
 
 	cfg := RunConfig{
 		Target:     target,
-		Timeout:    *timeout,
+		Timeout:    timeout,
 		OutputPath: jsonlOutput,
 	}
 
 	runner := NewRunner(c.stdout, c.stderr)
 
-	return runner.Run(ctx, cfg)
+	return runner.Run(cmd.Context(), cfg)
 }
 
 func NormalizeTestArgs(args []string) ([]string, string, error) {
@@ -158,8 +189,3 @@ func repoRel(path string) string {
 
 	return filepath.ToSlash(rel)
 }
-
-const usageText = `gomut test --package ./... [--timeout 2s] [--jsonl [mutations.jsonl]]
-gomut test --all
-gomut test --diff HEAD~1..HEAD
-`

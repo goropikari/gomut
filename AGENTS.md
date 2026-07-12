@@ -56,4 +56,6 @@
 ## Development
 
 - 全体テスト: `go test ./...`
-- 変更後は、必要なら `./gomut test --package ./sample --jsonl` や `./gomut test --all` で挙動確認する
+- format: `make fmt`
+- lint: `make lint`
+- 変更後は、必要なら `go run ./cmd/gomut test --package ./sample --jsonl` や `./gomut test --all` で挙動確認する
