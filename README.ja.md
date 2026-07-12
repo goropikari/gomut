@@ -16,6 +16,7 @@
 - `--all` でリポジトリ内の全 Go パッケージを対象化
 - `--diff` で git 差分に含まれるファイルだけを走査
 - 一時的なコピー上で安全に mutation testing を実行
+- `--parallel` で mutation を並列実行
 - AST から mutation 候補を検出
 - mutation ごとに `go test` を実行して結果を分類
 - `--timeout` で mutation ごとのタイムアウトを設定
@@ -65,6 +66,14 @@ gomut test --diff main
 ### 安全な実行
 
 `gomut` は各 mutation を一時ディレクトリ上のコピーで実行するため、途中で止まっても作業ツリーに変更が残りません。
+
+### 並列実行
+
+`gomut` は `--parallel <n>` で mutation 候補を並列実行できます。
+
+- 既定の worker 数は CPU コア数です。
+- `--parallel 1` を指定すると順次実行と同じ振る舞いになります。
+- 各 worker は独立した一時コピーを使い、結果をまとめてから出力するため、JSONL は壊れません。
 
 ### JSON Lines 出力
 
@@ -128,6 +137,7 @@ target:
   value: ./sample
 timeout: 30s
 progress: on
+parallel: 4
 jsonl: mutations.jsonl
 html: report.html
 ```
