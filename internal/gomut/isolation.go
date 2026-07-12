@@ -37,6 +37,24 @@ func prepareRunRoot(ctx context.Context, root string, stderr io.Writer) (string,
 	return PrepareRunRoot(ctx, root, stderr)
 }
 
+func prepareMutationRoot(ctx context.Context, root string) (string, func() error, error) {
+	parent, err := os.MkdirTemp("", "gomut-mutation-")
+	if err != nil {
+		return "", nil, err
+	}
+
+	mutationRoot := filepath.Join(parent, "repo")
+
+	if err := copyTree(ctx, root, mutationRoot); err != nil {
+		_ = os.RemoveAll(parent)
+		return "", nil, err
+	}
+
+	return mutationRoot, func() error {
+		return os.RemoveAll(parent)
+	}, nil
+}
+
 func copyTree(ctx context.Context, srcRoot, dstRoot string) error {
 	return copyTreeDir(ctx, srcRoot, dstRoot, srcRoot)
 }
