@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -48,10 +49,14 @@ func (c *Command) runTest(ctx context.Context, args []string) error {
 		allTarget = fs.Bool("all", false, "test all packages")
 		diffRange = fs.String("diff", "", "git diff range, for example HEAD~1..HEAD")
 		timeout   = fs.Duration("timeout", 10*time.Second, "timeout per mutation")
-		output    = fs.String("jsonl", "", "write JSON Lines output to this file; defaults to stdout")
 	)
 
-	if err := fs.Parse(args); err != nil {
+	parsedArgs, jsonlOutput, err := NormalizeTestArgs(args)
+	if err != nil {
+		return err
+	}
+
+	if err := fs.Parse(parsedArgs); err != nil {
 		return err
 	}
 
@@ -63,11 +68,35 @@ func (c *Command) runTest(ctx context.Context, args []string) error {
 	cfg := RunConfig{
 		Target:     target,
 		Timeout:    *timeout,
-		OutputPath: *output,
+		OutputPath: jsonlOutput,
 	}
 
 	runner := NewRunner(c.stdout, c.stderr)
 	return runner.Run(ctx, cfg)
+}
+
+func NormalizeTestArgs(args []string) ([]string, string, error) {
+	normalized := make([]string, 0, len(args))
+	output := ""
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch {
+		case arg == "--jsonl" || arg == "-jsonl":
+			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+				output = args[i+1]
+				i++
+			} else {
+				output = ""
+			}
+		case strings.HasPrefix(arg, "--jsonl="):
+			output = strings.TrimPrefix(arg, "--jsonl=")
+		case strings.HasPrefix(arg, "-jsonl="):
+			output = strings.TrimPrefix(arg, "-jsonl=")
+		default:
+			normalized = append(normalized, arg)
+		}
+	}
+	return normalized, output, nil
 }
 
 func ResolveTarget(pkg string, all bool, diffRange string) (Target, error) {
@@ -113,7 +142,7 @@ func repoRel(path string) string {
 	return filepath.ToSlash(rel)
 }
 
-const usageText = `gomut test --package ./... [--timeout 2s] [--jsonl mutations.jsonl]
+const usageText = `gomut test --package ./... [--timeout 2s] [--jsonl [mutations.jsonl]]
 gomut test --all
 gomut test --diff HEAD~1..HEAD
 `

@@ -86,3 +86,35 @@ func TestApplyMutation(t *testing.T) {
 		assert.Equal(t, "package sample\n\nfunc add() int { return 1 - 2 }\n", string(out))
 	})
 }
+
+func TestNormalizeTestArgs(t *testing.T) {
+	t.Run("given jsonl without a value, it keeps stdout output", func(t *testing.T) {
+		// Arrange
+		args, output, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--jsonl"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
+		assert.Empty(t, output)
+	})
+
+	t.Run("given jsonl with a value, it captures the file path", func(t *testing.T) {
+		// Arrange
+		args, output, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--jsonl", "mutations.jsonl"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
+		assert.Equal(t, "mutations.jsonl", output)
+	})
+
+	t.Run("given jsonl equals syntax, it captures the file path", func(t *testing.T) {
+		// Arrange
+		args, output, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--jsonl=mutations.jsonl"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
+		assert.Equal(t, "mutations.jsonl", output)
+	})
+}

@@ -40,12 +40,13 @@ go build -o gomut ./cmd/gomut
 ### JSON Lines output
 
 ```bash
+./gomut test --package ./internal/gomut --jsonl
 ./gomut test --package ./internal/gomut --jsonl mutations.jsonl
 ```
 
 ## Output
 
-`stdout` は JSON Lines の出力先です。`--jsonl` にファイルパスを指定した場合のみ、そのファイルに書き込みます。
+`stdout` は JSON Lines の出力先です。`--jsonl` 単体なら stdout に出します。`--jsonl` にファイルパスを指定した場合のみ、そのファイルに書き込みます。
 
 集計サマリや補助メッセージは `stderr` に出します。
 
