@@ -28,15 +28,9 @@ install-dprint:
 	@set -eu; \
 	mkdir -p '$(LOCAL_BIN)'; \
 	if ! command -v dprint >/dev/null 2>&1; then \
-		tmpdir="$$(mktemp -d)"; \
-		url="$$(curl -fsSL https://api.github.com/repos/dprint/dprint/releases/latest | grep -Eo '"browser_download_url": *"[^"]+"' | cut -d'"' -f4 | grep -E 'linux.*(x86_64|x64).*\.tar\.gz$$' | head -n1)"; \
-		[ -n "$$url" ]; \
-		curl -fsSL "$$url" -o "$$tmpdir/dprint.tar.gz"; \
-		tar -xzf "$$tmpdir/dprint.tar.gz" -C "$$tmpdir"; \
-		binary="$$(find "$$tmpdir" -type f -name dprint -perm -u+x | head -n1)"; \
-		install -m 755 "$$binary" '$(LOCAL_BIN)/dprint'; \
-		rm -rf "$$tmpdir"; \
+		curl -fsSL https://dprint.dev/install.sh | sh; \
 	fi
+	dprint --version
 
 install-gitleaks:
 	@set -eu; \
