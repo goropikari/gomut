@@ -1,0 +1,172 @@
+# gomut
+
+`gomut` は Go 向けの mutation testing CLI です。
+
+ソースコードを変異させ、各 mutation ごとに `go test` を実行して、テストの弱い部分を機械的に見つけるために使います。
+
+英語版の README は [README.md](README.md) を参照してください。
+
+## 機能
+
+- 単一の Go パッケージに対して mutation testing を実行
+- `--all` でリポジトリ内の全 Go パッケージを対象化
+- `--diff` で git 差分に含まれるファイルだけを走査
+- `--worktree` で一時的な git worktree 上で実行
+- AST から mutation 候補を検出
+- mutation ごとに `go test` を実行して結果を分類
+- 結果を JSON Lines 形式で出力
+
+## インストール
+
+```bash
+go install ./cmd/gomut
+```
+
+## Dev Container
+
+このリポジトリには Go 1.26 向けの dev container が含まれています。
+
+開発用ツールが必要な場合は、次を実行してください。
+
+```bash
+make install-dev-tools
+```
+
+`codex`、`dprint`、`gitleaks` をまとめて導入します。
+
+## 使い方
+
+### パッケージ単位
+
+```bash
+gomut test --package ./sample
+```
+
+### 全パッケージ
+
+```bash
+gomut test --all
+```
+
+### diff モード
+
+```bash
+gomut test --diff HEAD~1..HEAD
+```
+
+### worktree モード
+
+```bash
+gomut test --package ./sample --worktree
+```
+
+`--worktree` は実行時に一時的な git worktree を作成します。
+
+### JSON Lines 出力
+
+```bash
+gomut test --package ./internal/gomut --jsonl
+gomut test --package ./internal/gomut --jsonl mutations.jsonl
+```
+
+## 出力
+
+`stdout` は JSON Lines の出力先です。
+
+- `--jsonl` だけを指定した場合は `stdout` に出力
+- `--jsonl <path>` を指定した場合はそのファイルに出力
+
+集計サマリや補助メッセージは `stderr` に出ます。
+
+各 JSONL レコードには次の情報が入ります。
+
+- `target`
+- `started_at`
+- `command`
+- `summary`
+- `mutation`
+
+`mutation` には少なくとも次が含まれます。
+
+- `file`
+- `line`
+- `kind`
+- `original`
+- `replacement`
+- `result`
+- `message`
+
+`result` の値は次のとおりです。
+
+- `KILLED`
+- `LIVED`
+- `NOT COVERED`
+- `TIMED OUT`
+- `NOT VIABLE`
+
+## 対応 mutation
+
+現在対応している mutation 種別は次のとおりです。
+
+| 種類 | 例 |
+| --- | --- |
+| `comparison_operator` | `==` -> `!=`、`!=` -> `==`、`<` -> `<=`、`>` -> `>=`、`<=` -> `<`、`>=` -> `>` |
+| `logical_operator` | `&&` -> `&#124;&#124;`、`&#124;&#124;` -> `&&` |
+| `guard_clause` | 単純な guard clause の return 差し替え |
+| `arithmetic_operator` | `+` -> `-`、`-` -> `+`、`*` -> `/`、`/` -> `*`、`%` -> `*` |
+| `bitwise_operator` | `&` -> `&#124;`、`&#124;` -> `&`、`^` -> `&`、`&^` -> `&#124;` |
+| `shift_operator` | `<<` -> `>>`、`>>` -> `<<` |
+| `assignment_arithmetic` | `+=` -> `-=`, `-=` -> `+=`, `*=` -> `/=`, `/=` -> `*=`, `%=` -> `*=` |
+| `assignment_shift` | `<<=` -> `>>=`、`>>=` -> `<<=` |
+| `assignment_bitwise` | `&=` -> `&#124;=`、`&#124;=` -> `&=`、`^=` -> `&=`、`&^=` -> `&#124;=` |
+| `inc_dec` | `++` -> `--`、`--` -> `++` |
+| `control_flow` | `switch x` の条件反転 |
+| `return` | `return true` -> `return false`、`return false` -> `return true` |
+| `nil_check` | `== nil` -> `!= nil`、`!= nil` -> `== nil` |
+| `boolean_literal` | `true` -> `false`、`false` -> `true` |
+| `integer_literal` | `0` -> `1`、0 以外の整数リテラル -> `0` |
+| `float_literal` | `0.0` -> `1.0`、`0.0` 以外の浮動小数点リテラル -> `0.0` |
+| `rune_literal` | `'a'` -> `'b'`、`'a'` 以外の rune リテラル -> `'a'` |
+| `unary_not` | `!x` -> `x` |
+| `unary_minus` | `-x` -> `x` |
+| `unary_bitwise_not` | `^x` -> `x` |
+| `string_literal` | `""` -> `"mutated"`、空でない文字列リテラル -> `""` |
+
+## 前提条件
+
+- mutation 実行前に baseline の `go test` が通ること
+- Go 1.26 以上が必要
+- `--diff` では git が必要
+
+## テスト
+
+テスト方針は [docs/testing-guidelines.md](docs/testing-guidelines.md) にまとめています。
+
+要点:
+
+- `testify` を使う
+- AAA パターンで書く
+- `t.Run` を常に使う
+- 可読性が明確に上がる場合を除いてテーブル駆動テストは避ける
+- テスト関数名は `Test{対象関数名}` を基本にする
+
+## 開発
+
+```bash
+go test ./...
+```
+
+```bash
+make fmt
+```
+
+```bash
+make lint
+```
+
+必要に応じて、次のコマンドで挙動確認できます。
+
+```bash
+go run ./cmd/gomut test --package ./sample --jsonl
+./gomut test --all
+```

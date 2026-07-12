@@ -1,16 +1,20 @@
 # gomut
 
-Go 向けの mutation testing CLI です。主な用途は、AI agent がテストの弱さを機械的に見つけることです。
+`gomut` is a mutation testing CLI for Go projects.
+
+It helps you find weak spots in tests by mutating source code, running `go test` for each mutation, and classifying the result.
+
+For the Japanese version, see [README.ja.md](README.ja.md).
 
 ## Features
 
-- Go パッケージ単位で mutation testing を実行
-- `--all` でリポジトリ内の Go パッケージを対象化
-- `--diff` で git 差分に含まれる対象を走査
-- `--worktree` で一時 git worktree 上で mutation testing を実行
-- AST ベースで代表的な mutation 候補を生成
-- mutation ごとに `go test` を実行し、結果を分類
-- JSON Lines で結果を出力
+- Run mutation testing for a single Go package
+- Run against all Go packages in a repository with `--all`
+- Scan only the files touched by a git diff with `--diff`
+- Run mutation testing inside a temporary git worktree with `--worktree`
+- Discover mutation candidates from the AST
+- Execute `go test` per mutation and classify the result
+- Emit results as JSON Lines
 
 ## Install
 
@@ -20,15 +24,15 @@ go install ./cmd/gomut
 
 ## Dev Container
 
-`.devcontainer/devcontainer.json` を使うと、Go 1.26 環境で起動できます。開発用ツールは `make install-dev-tools` で入れます。
+The repository includes a dev container configured for Go 1.26.
 
-開発用ツールが必要なときは `make install-dev-tools` を実行してください。`codex`、`dprint`、`gitleaks` をまとめて入れます。
+If you need the development tools, run:
 
 ```bash
 make install-dev-tools
 ```
 
-`~/.codex` 相当のデータは Docker volume に保持します。
+That installs `codex`, `dprint`, and `gitleaks`.
 
 ## Usage
 
@@ -56,7 +60,7 @@ gomut test --diff HEAD~1..HEAD
 gomut test --package ./sample --worktree
 ```
 
-`--worktree` は一時 `git worktree` を作成します。
+`--worktree` creates a temporary git worktree for the run.
 
 ### JSON Lines output
 
@@ -67,137 +71,102 @@ gomut test --package ./internal/gomut --jsonl mutations.jsonl
 
 ## Output
 
-`stdout` は JSON Lines の出力先です。`--jsonl` 単体なら stdout に出します。`--jsonl` にファイルパスを指定した場合のみ、そのファイルに書き込みます。
+`stdout` is the JSON Lines output stream.
 
-集計サマリや補助メッセージは `stderr` に出します。
+- `--jsonl` by itself writes to `stdout`
+- `--jsonl <path>` writes to the given file
 
-主な結果値:
+Summaries and auxiliary messages go to `stderr`.
 
-- `KILLED`: 変異後の `go test` が失敗した状態です。既存テストが変異を検出できています。
-- `LIVED`: 変異後の `go test` が成功した状態です。テストが変異を検出できていません。
-- `NOT COVERED`: baseline のカバレッジでその行が通っていない状態です。変異テスト自体は実行せず、この結果になります。
-- `TIMED OUT`: 変異後の `go test` がタイムアウトした状態です。
-- `NOT VIABLE`: 変異後のコードが構文エラーや型エラーなどで成立しない状態です。
+Each JSONL record contains:
 
-各レコードには次の情報が入ります。
+- `target`
+- `started_at`
+- `command`
+- `summary`
+- `mutation`
 
-- `target`: 実行対象
-- `summary`: ここまでの集計
-- `mutation`: 個別の mutation 結果
+`mutation` includes at least:
 
-`mutation` には `file`、`line`、`kind`、`original`、`replacement`、`result`、`message` が入ります。`message` には `go test` の結果や、実行できなかった理由が入ります。
+- `file`
+- `line`
+- `kind`
+- `original`
+- `replacement`
+- `result`
+- `message`
 
-### Summary の読み方
+The `result` field uses these values:
 
-`summary` は、これまでに処理した mutation の集計です。
+- `KILLED`
+- `LIVED`
+- `NOT COVERED`
+- `TIMED OUT`
+- `NOT VIABLE`
 
-- `total`: 処理した mutation の総数
-- `killed`: テストが mutation を検出できた数
-- `lived`: テストが mutation を検出できなかった数
-- `not_covered`: baseline のカバレッジ外だった数
-- `timed_out`: mutation 後のテストが時間切れになった数
-- `not_viable`: mutation 後のコードが成立しなかった数
+## Supported Mutations
 
-基本的には `killed` が多いほど良く、`lived` と `not_covered` が少ないほど良い状態です。`timed_out` と `not_viable` が多い場合は、テストや mutation 候補の見直しが必要です。
+`gomut` currently supports the following mutation kinds:
+
+| Kind | Example |
+| --- | --- |
+| `comparison_operator` | `==` -> `!=`, `!=` -> `==`, `<` -> `<=`, `>` -> `>=`, `<=` -> `<`, `>=` -> `>` |
+| `logical_operator` | `&&` -> `&#124;&#124;`, `&#124;&#124;` -> `&&` |
+| `guard_clause` | Simple guard-clause return replacement |
+| `arithmetic_operator` | `+` -> `-`, `-` -> `+`, `*` -> `/`, `/` -> `*`, `%` -> `*` |
+| `bitwise_operator` | `&` -> `&#124;`, `&#124;` -> `&`, `^` -> `&`, `&^` -> `&#124;` |
+| `shift_operator` | `<<` -> `>>`, `>>` -> `<<` |
+| `assignment_arithmetic` | `+=` -> `-=`, `-=` -> `+=`, `*=` -> `/=`, `/=` -> `*=`, `%=` -> `*=` |
+| `assignment_shift` | `<<=` -> `>>=`, `>>=` -> `<<=` |
+| `assignment_bitwise` | `&=` -> `&#124;=`, `&#124;=` -> `&=`, `^=` -> `&=`, `&^=` -> `&#124;=` |
+| `inc_dec` | `++` -> `--`, `--` -> `++` |
+| `control_flow` | `switch x` condition inversion |
+| `return` | `return true` -> `return false`, `return false` -> `return true` |
+| `nil_check` | `== nil` -> `!= nil`, `!= nil` -> `== nil` |
+| `boolean_literal` | `true` -> `false`, `false` -> `true` |
+| `integer_literal` | `0` -> `1`, non-zero integer literal -> `0` |
+| `float_literal` | `0.0` -> `1.0`, non-zero float literal -> `0.0` |
+| `rune_literal` | `'a'` -> `'b'`, non-`'a'` rune literal -> `'a'` |
+| `unary_not` | `!x` -> `x` |
+| `unary_minus` | `-x` -> `x` |
+| `unary_bitwise_not` | `^x` -> `x` |
+| `string_literal` | `""` -> `"mutated"`, non-empty string literal -> `""` |
 
 ## Preconditions
 
-- mutation 実行前に baseline の `go test` が通ること
-- Go 1.26 以上
-- `--diff` では git が利用可能であること
-
-## Current Scope
-
-現状対応している mutant は以下です。
-
-| 種類                              | 変異内容                                                                          |
-| --------------------------------- | --------------------------------------------------------------------------------- |
-| 比較演算子                        | `==` -> `!=`                                                                      |
-| 比較演算子                        | `!=` -> `==`                                                                      |
-| 比較演算子                        | `<` -> `<=`                                                                       |
-| 比較演算子                        | `>` -> `>=`                                                                       |
-| 比較演算子                        | `<=` -> `<`                                                                       |
-| 比較演算子                        | `>=` -> `>`                                                                       |
-| 論理演算子                        | `&&` -> `                                                                         |
-| 論理演算子                        | `                                                                                 |
-| 算術演算子                        | `+` -> `-`                                                                        |
-| 算術演算子                        | `-` -> `+`                                                                        |
-| 算術演算子                        | `*` -> `/`                                                                        |
-| 算術演算子                        | `/` -> `*`                                                                        |
-| 算術演算子                        | `%` -> `*`                                                                        |
-| bitwise 演算子                    | `&` -> `\|`                                                                       |
-| bitwise 演算子                    | `\|` -> `&`                                                                       |
-| bitwise 演算子                    | `^` -> `&`                                                                        |
-| bitwise 演算子                    | `&^` -> `\|`                                                                      |
-| shift 演算子                      | `<<` -> `>>`                                                                      |
-| shift 演算子                      | `>>` -> `<<`                                                                      |
-| 代入演算子                        | `+=` -> `-=`                                                                      |
-| 代入演算子                        | `-=` -> `+=`                                                                      |
-| 代入演算子                        | `*=` -> `/=`                                                                      |
-| 代入演算子                        | `/=` -> `*=`                                                                      |
-| 代入演算子                        | `%=` -> `*=`                                                                      |
-| 代入演算子                        | `&=` -> `                                                                         |
-| 代入演算子                        | `                                                                                 |
-| 代入演算子                        | `^=` -> `&=`                                                                      |
-| 代入演算子                        | `&^=` -> `                                                                        |
-| 代入演算子                        | `<<=` -> `>>=`                                                                    |
-| 代入演算子                        | `>>=` -> `<<=`                                                                    |
-| インクリメント/デクリメント       | `++` -> `--`                                                                      |
-| インクリメント/デクリメント       | `--` -> `++`                                                                      |
-| return                            | `return true` -> `return false`                                                   |
-| return                            | `return false` -> `return true`                                                   |
-| nil チェック                      | `!= nil` -> `== nil`                                                              |
-| nil チェック                      | `== nil` -> `!= nil`                                                              |
-| boolean literal                   | `true` -> `false`                                                                 |
-| boolean literal                   | `false` -> `true`                                                                 |
-| integer literal                   | `0` -> `1`                                                                        |
-| integer literal                   | `0` 以外の整数リテラル -> `0`                                                     |
-| float literal                     | `0.0` -> `1.0`                                                                    |
-| float literal                     | `0.0` 以外の浮動小数点リテラル -> `0.0`                                           |
-| rune literal                      | `'a'` -> `'b'`                                                                    |
-| rune literal                      | `'a'` 以外の rune リテラル -> `'a'`                                               |
-| unary not                         | `!x` -> `x`                                                                       |
-| unary minus                       | `-x` -> `x`                                                                       |
-| unary bitwise not                 | `^x` -> `x`                                                                       |
-| switch condition                  | `switch x` の `x` を `!x` に反転                                                  |
-| string literal                    | `""` -> `"mutated"`                                                               |
-| string literal                    | 空でない文字列リテラル -> `""`                                                    |
-| guard clause の単純な return 変異 | `return x` の `x` を `nil` 以外の単純な識別子として扱い、別の return 値に差し替え |
-
-未実装のものは今後追加できます。
-
-## Planned Extensions
-
-- 追加 mutation 種別
-  - 代入演算子の反転
-  - 境界値比較の強化
-  - `if` / `switch` の条件反転
-  - `return` 値の定数化
-  - `nil` チェックの反転
-  - ブール値の固定化
-  - 算術式の一部削除
-- `NOT COVERED` 判定の精度向上
-- `diff` モードの対象解決をより厳密にする
-- 並列実行の導入
-- レポート出力形式の拡張
-- CI 連携用のしきい値判定
-- HTML などの可視化出力
-- 自動修正や提案フロー
+- Baseline `go test` must pass before mutation testing starts
+- Go 1.26 or later is required
+- `--diff` requires git
 
 ## Testing
 
-テスト方針は [`docs/testing-guidelines.md`](docs/testing-guidelines.md) にまとめています。
+Repository testing guidelines are documented in [docs/testing-guidelines.md](docs/testing-guidelines.md).
 
-要点:
+Key points:
 
-- `testify` を使う
-- AAA パターンで書く
-- `t.Run` を常に使う
-- テーブル駆動テストは原則使わない
-- テスト関数名は `Test{対象関数名}` を基本にする
+- Use `testify`
+- Follow the AAA pattern
+- Always use `t.Run`
+- Avoid table-driven tests unless they clearly improve readability
+- Prefer test names in the form `Test{TargetFunctionName}`
 
 ## Development
 
 ```bash
 go test ./...
+```
+
+```bash
+make fmt
+```
+
+```bash
+make lint
+```
+
+When needed, verify behavior with commands such as:
+
+```bash
+go run ./cmd/gomut test --package ./sample --jsonl
+./gomut test --all
 ```
