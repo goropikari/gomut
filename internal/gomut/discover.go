@@ -93,6 +93,10 @@ func discoverFileCandidates(root, pkg, file string, target Target, coverage map[
 			if candidate, ok := mutationFromBinaryExpr(fset, src, file, pkg, node, target, covered); ok {
 				candidates = append(candidates, candidate)
 			}
+		case *ast.IfStmt:
+			if candidate, ok := mutationFromIfStmt(fset, src, file, pkg, node, target, covered); ok {
+				candidates = append(candidates, candidate)
+			}
 		case *ast.ReturnStmt:
 			if candidate, ok := mutationFromReturnStmt(fset, src, file, pkg, node, target, covered); ok {
 				candidates = append(candidates, candidate)
@@ -171,6 +175,49 @@ func mutationFromReturnStmt(fset *token.FileSet, src []byte, file, pkg string, n
 		PackagePath: pkg,
 		Covered:     lineCovered(coverage, line),
 	}, true
+}
+
+// mutationFromIfStmt reserves the control-flow mutation hook for if-condition inversion.
+func mutationFromIfStmt(fset *token.FileSet, src []byte, file, pkg string, node *ast.IfStmt, target Target, coverage FileCoverage) (Candidate, bool) {
+	if node == nil || node.Cond == nil {
+		return Candidate{}, false
+	}
+
+	pos := fset.Position(node.Cond.Pos())
+	end := fset.Position(node.Cond.End())
+	if pos.Offset < 0 || end.Offset > len(src) || pos.Offset >= end.Offset {
+		return Candidate{}, false
+	}
+
+	line := pos.Line
+	if !mutationAllowedByTarget(file, line, target) {
+		return Candidate{}, false
+	}
+
+	original := string(src[pos.Offset:end.Offset])
+	replacement := negateCondition(node.Cond, original)
+
+	return Candidate{
+		File:        repoRel(file),
+		Line:        line,
+		Kind:        MutationKindControlFlow,
+		Original:    original,
+		Replacement: replacement,
+		Start:       pos.Offset,
+		End:         end.Offset,
+		PackagePath: pkg,
+		Covered:     lineCovered(coverage, line),
+	}, true
+}
+
+// negateCondition returns the textual negation used for control flow mutations.
+func negateCondition(cond ast.Expr, original string) string {
+	switch cond.(type) {
+	case *ast.Ident, *ast.SelectorExpr:
+		return "!" + original
+	default:
+		return "!(" + original + ")"
+	}
 }
 
 func mutationAllowedByTarget(file string, line int, target Target) bool {

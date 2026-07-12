@@ -52,6 +52,24 @@ func TestCanPublish(t *testing.T) {
 	})
 }
 
+func TestIsAdult(t *testing.T) {
+	t.Run("given an adult age, it reports true", func(t *testing.T) {
+		// Arrange
+		got := sample.IsAdult(18)
+
+		// Assert
+		assert.True(t, got)
+	})
+
+	t.Run("given a minor age, it reports false", func(t *testing.T) {
+		// Arrange
+		got := sample.IsAdult(17)
+
+		// Assert
+		assert.False(t, got)
+	})
+}
+
 func TestValidateQuantity(t *testing.T) {
 	t.Run("given a negative quantity, it returns an error", func(t *testing.T) {
 		// Arrange

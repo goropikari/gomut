@@ -20,6 +20,15 @@ func CanPublish(age int, approved bool) bool {
 	return age >= 18 && approved
 }
 
+// IsAdult reports whether the age is 18 or above.
+func IsAdult(age int) bool {
+	if age < 18 {
+		return false
+	}
+
+	return true
+}
+
 // ValidateQuantity returns an error for negative quantities.
 func ValidateQuantity(quantity int) error {
 	if quantity < 0 {
