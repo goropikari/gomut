@@ -138,6 +138,86 @@ func TestEnableFlag(t *testing.T) {
 	})
 }
 
+func TestKeepCommonBits(t *testing.T) {
+	t.Run("given two masks, it keeps only the shared bits", func(t *testing.T) {
+		// Arrange
+		got := sample.KeepCommonBits(0b1101, 0b1011)
+
+		// Assert
+		assert.Equal(t, uint8(0b1001), got)
+	})
+}
+
+func TestMergeFlags(t *testing.T) {
+	t.Run("given two masks, it combines all bits", func(t *testing.T) {
+		// Arrange
+		got := sample.MergeFlags(0b0101, 0b0011)
+
+		// Assert
+		assert.Equal(t, uint8(0b0111), got)
+	})
+}
+
+func TestClearFlagBits(t *testing.T) {
+	t.Run("given a mask and bits to clear, it removes the requested bits", func(t *testing.T) {
+		// Arrange
+		got := sample.ClearFlagBits(0b1111, 0b0101)
+
+		// Assert
+		assert.Equal(t, uint8(0b1010), got)
+	})
+}
+
+func TestShiftLeft(t *testing.T) {
+	t.Run("given a value, it shifts the value left", func(t *testing.T) {
+		// Arrange
+		got := sample.ShiftLeft(0b0001)
+
+		// Assert
+		assert.Equal(t, uint8(0b0010), got)
+	})
+}
+
+func TestShiftRight(t *testing.T) {
+	t.Run("given a value, it shifts the value right", func(t *testing.T) {
+		// Arrange
+		got := sample.ShiftRight(0b1000)
+
+		// Assert
+		assert.Equal(t, uint8(0b0100), got)
+	})
+}
+
+func TestShiftCounter(t *testing.T) {
+	t.Run("given a value, it shifts the value in place", func(t *testing.T) {
+		// Arrange
+		got := sample.ShiftCounter(0b0011)
+
+		// Assert
+		assert.Equal(t, uint8(0b0110), got)
+	})
+}
+
+func TestNegateScore(t *testing.T) {
+	t.Run("given a positive score, it returns the negated score", func(t *testing.T) {
+		// Arrange
+		got := sample.NegateScore(7)
+
+		// Assert
+		assert.Equal(t, -7, got)
+	})
+}
+
+func TestInvertBits(t *testing.T) {
+	t.Run("given a bit mask, it returns the bitwise complement", func(t *testing.T) {
+		// Arrange
+		got := sample.InvertBits(0b00001111)
+
+		// Assert
+		assert.Equal(t, uint8(0b11110000), got)
+	})
+}
+
 func TestAddBonus(t *testing.T) {
 	t.Run("given a score and bonus, it adds the bonus to the score", func(t *testing.T) {
 		// Arrange
@@ -174,5 +254,81 @@ func TestValidateQuantity(t *testing.T) {
 
 		// Assert
 		require.NoError(t, err)
+	})
+}
+
+func TestDefaultRetryLimit(t *testing.T) {
+	t.Run("given no input, it returns the configured retry limit", func(t *testing.T) {
+		// Arrange
+		got := sample.DefaultRetryLimit()
+
+		// Assert
+		assert.Equal(t, 3, got)
+	})
+}
+
+func TestGreeting(t *testing.T) {
+	t.Run("given no input, it returns the greeting text", func(t *testing.T) {
+		// Arrange
+		got := sample.Greeting()
+
+		// Assert
+		assert.Equal(t, "hello", got)
+	})
+}
+
+func TestDefaultTaxRate(t *testing.T) {
+	t.Run("given no input, it returns the default tax rate", func(t *testing.T) {
+		// Arrange
+		got := sample.DefaultTaxRate()
+
+		// Assert
+		assert.Equal(t, 0.1, got)
+	})
+}
+
+func TestDefaultGrade(t *testing.T) {
+	t.Run("given no input, it returns the default grade rune", func(t *testing.T) {
+		// Arrange
+		got := sample.DefaultGrade()
+
+		// Assert
+		assert.Equal(t, rune('A'), got)
+	})
+}
+
+func TestIsBlocked(t *testing.T) {
+	t.Run("given approval, it reports false", func(t *testing.T) {
+		// Arrange
+		got := sample.IsBlocked(true)
+
+		// Assert
+		assert.False(t, got)
+	})
+
+	t.Run("given no approval, it reports true", func(t *testing.T) {
+		// Arrange
+		got := sample.IsBlocked(false)
+
+		// Assert
+		assert.True(t, got)
+	})
+}
+
+func TestApprovalLabel(t *testing.T) {
+	t.Run("given approval, it returns approved", func(t *testing.T) {
+		// Arrange
+		got := sample.ApprovalLabel(true)
+
+		// Assert
+		assert.Equal(t, "approved", got)
+	})
+
+	t.Run("given no approval, it returns blocked", func(t *testing.T) {
+		// Arrange
+		got := sample.ApprovalLabel(false)
+
+		// Assert
+		assert.Equal(t, "blocked", got)
 	})
 }

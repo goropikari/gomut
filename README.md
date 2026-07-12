@@ -104,6 +104,12 @@ gomut test --package ./internal/gomut --jsonl mutations.jsonl
 | 算術演算子                        | `*` -> `/`                                                                        |
 | 算術演算子                        | `/` -> `*`                                                                        |
 | 算術演算子                        | `%` -> `*`                                                                        |
+| bitwise 演算子                    | `&` -> `\|`                                                                       |
+| bitwise 演算子                    | `\|` -> `&`                                                                       |
+| bitwise 演算子                    | `^` -> `&`                                                                        |
+| bitwise 演算子                    | `&^` -> `\|`                                                                      |
+| shift 演算子                      | `<<` -> `>>`                                                                      |
+| shift 演算子                      | `>>` -> `<<`                                                                      |
 | 代入演算子                        | `+=` -> `-=`                                                                      |
 | 代入演算子                        | `-=` -> `+=`                                                                      |
 | 代入演算子                        | `*=` -> `/=`                                                                      |
@@ -113,6 +119,8 @@ gomut test --package ./internal/gomut --jsonl mutations.jsonl
 | 代入演算子                        | `                                                                                 |
 | 代入演算子                        | `^=` -> `&=`                                                                      |
 | 代入演算子                        | `&^=` -> `                                                                        |
+| 代入演算子                        | `<<=` -> `>>=`                                                                    |
+| 代入演算子                        | `>>=` -> `<<=`                                                                    |
 | インクリメント/デクリメント       | `++` -> `--`                                                                      |
 | インクリメント/デクリメント       | `--` -> `++`                                                                      |
 | return                            | `return true` -> `return false`                                                   |
@@ -121,6 +129,18 @@ gomut test --package ./internal/gomut --jsonl mutations.jsonl
 | nil チェック                      | `== nil` -> `!= nil`                                                              |
 | boolean literal                   | `true` -> `false`                                                                 |
 | boolean literal                   | `false` -> `true`                                                                 |
+| integer literal                   | `0` -> `1`                                                                        |
+| integer literal                   | `0` 以外の整数リテラル -> `0`                                                     |
+| float literal                     | `0.0` -> `1.0`                                                                    |
+| float literal                     | `0.0` 以外の浮動小数点リテラル -> `0.0`                                           |
+| rune literal                      | `'a'` -> `'b'`                                                                    |
+| rune literal                      | `'a'` 以外の rune リテラル -> `'a'`                                               |
+| unary not                         | `!x` -> `x`                                                                       |
+| unary minus                       | `-x` -> `x`                                                                       |
+| unary bitwise not                 | `^x` -> `x`                                                                       |
+| switch condition                  | `switch x` の `x` を `!x` に反転                                                  |
+| string literal                    | `""` -> `"mutated"`                                                               |
+| string literal                    | 空でない文字列リテラル -> `""`                                                    |
 | guard clause の単純な return 変異 | `return x` の `x` を `nil` 以外の単純な識別子として扱い、別の return 値に差し替え |
 
 未実装のものは今後追加できます。
