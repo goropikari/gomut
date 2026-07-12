@@ -15,6 +15,7 @@ For the Japanese version, see [README.ja.md](README.ja.md).
 - Discover mutation candidates from the AST
 - Execute `go test` per mutation and classify the result
 - Emit results as JSON Lines
+- Generate an optional HTML report
 
 ## Install
 
@@ -62,17 +63,29 @@ gomut test --diff main
 ### JSON Lines output
 
 ```bash
-gomut test --package ./internal/gomut --jsonl
-gomut test --package ./internal/gomut --jsonl mutations.jsonl
-gomut test --package ./internal/gomut --type lived --jsonl
+gomut test --package ./sample --jsonl
+gomut test --package ./sample --jsonl mutations.jsonl
+gomut test --package ./sample --type lived --jsonl
+gomut test --package ./sample --jsonl mutations.jsonl --html report.html
+```
+
+### HTML output
+
+```bash
+gomut test --package ./sample --html
+gomut test --package ./sample --html report.html
+gomut test --package ./sample --jsonl mutations.jsonl --html report.html
 ```
 
 ## Output
 
-`stdout` is the JSON Lines output stream.
+By default, JSON Lines are written to `stdout`.
 
 - `--jsonl` by itself writes to `stdout`
 - `--jsonl <path>` writes to the given file
+- `--html` by itself writes the HTML report to `stdout`
+- `--html <path>` writes the HTML report to the given file
+- `--html <path>` without `--jsonl` suppresses JSONL output
 - `--type` filters emitted mutation results after execution
 - `--type` accepts single values, comma-separated values, and repeated flags
 - `--type` affects both JSONL output and the summary on `stderr`

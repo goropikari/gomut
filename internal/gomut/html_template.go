@@ -160,8 +160,8 @@ const htmlTemplateSource = `<!doctype html>
       background: #102a43;
       color: #eff6ff;
       overflow-x: auto;
-      white-space: pre-wrap;
-      word-break: break-word;
+      white-space: pre;
+      word-break: normal;
     }
     .message {
       margin: 0;
@@ -241,12 +241,12 @@ const htmlTemplateSource = `<!doctype html>
             </header>
             <div class="mutation-body">
               <div>
-                <span class="label">Original</span>
-                <pre class="code-block">{{ .Original }}</pre>
+                <span class="label">Source excerpt</span>
+                <pre class="code-block">{{ .Excerpt }}</pre>
               </div>
               <div>
-                <span class="label">Replacement</span>
-                <pre class="code-block">{{ .Replacement }}</pre>
+                <span class="label">Unified diff</span>
+                <pre class="code-block">{{ .Diff }}</pre>
               </div>
             </div>
             <p class="message">{{ .Message }}</p>

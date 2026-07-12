@@ -15,6 +15,7 @@
 - AST から mutation 候補を検出
 - mutation ごとに `go test` を実行して結果を分類
 - 結果を JSON Lines 形式で出力
+- HTML レポートを任意で生成
 
 ## インストール
 
@@ -65,14 +66,26 @@ gomut test --diff main
 gomut test --package ./internal/gomut --jsonl
 gomut test --package ./internal/gomut --jsonl mutations.jsonl
 gomut test --package ./internal/gomut --type lived --jsonl
+gomut test --package ./internal/gomut --jsonl mutations.jsonl --html report.html
+```
+
+### HTML 出力
+
+```bash
+gomut test --package ./internal/gomut --html
+gomut test --package ./internal/gomut --html report.html
+gomut test --package ./internal/gomut --jsonl mutations.jsonl --html report.html
 ```
 
 ## 出力
 
-`stdout` は JSON Lines の出力先です。
+JSON Lines はデフォルトで `stdout` に出ます。
 
 - `--jsonl` だけを指定した場合は `stdout` に出力
 - `--jsonl <path>` を指定した場合はそのファイルに出力
+- `--html` だけを指定した場合は HTML レポートを `stdout` に出力
+- `--html <path>` を指定した場合はそのファイルに出力
+- `--html <path>` を指定して `--jsonl` を付けない場合、JSONL 出力は抑止される
 - `--type` は mutation 実行後の結果を絞り込む
 - `--type` は単一指定、カンマ区切り、繰り返し指定に対応する
 - `--type` は JSONL 出力と `stderr` の summary の両方に反映される

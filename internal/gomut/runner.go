@@ -82,7 +82,7 @@ func (r *Runner) runCandidates(ctx context.Context, root string, cfg RunConfig, 
 		return err
 	}
 
-	if err := r.writeCandidateHTML(cfg, htmlWriter, startedAt, command, summary, records); err != nil {
+	if err := r.writeCandidateHTML(root, cfg, htmlWriter, startedAt, command, summary, records); err != nil {
 		return err
 	}
 
@@ -131,7 +131,11 @@ func openJSONLOutput(cfg RunConfig, stdout io.Writer) (io.Writer, func(), error)
 		}, nil
 	}
 
-	if cfg.HTMLEnabled {
+	if cfg.HTMLEnabled && cfg.HTMLPath == "" {
+		return nil, nil, nil
+	}
+
+	if cfg.HTMLPath != "" && !cfg.JSONLEnabled {
 		return nil, nil, nil
 	}
 
@@ -201,12 +205,13 @@ func (r *Runner) runCandidateLoop(ctx context.Context, root string, cfg RunConfi
 	return summary, records, nil
 }
 
-func (r *Runner) writeCandidateHTML(cfg RunConfig, htmlWriter io.Writer, startedAt, command string, summary Summary, records []Record) error {
+func (r *Runner) writeCandidateHTML(root string, cfg RunConfig, htmlWriter io.Writer, startedAt, command string, summary Summary, records []Record) error {
 	if !cfg.HTMLEnabled {
 		return nil
 	}
 
 	return WriteHTML(htmlWriter, HTMLReportData{
+		Root:      root,
 		Target:    cfg.Target,
 		StartedAt: startedAt,
 		Command:   command,
@@ -257,6 +262,8 @@ func (r *Runner) buildRecord(target Target, startedAt, command string, candidate
 			Replacement: candidate.Replacement,
 			Result:      result,
 			Message:     message,
+			Start:       candidate.Start,
+			End:         candidate.End,
 		},
 	}
 }

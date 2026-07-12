@@ -15,11 +15,12 @@ import (
 )
 
 type Command struct {
-	stdout      io.Writer
-	stderr      io.Writer
-	jsonlOutput string
-	htmlOutput  string
-	htmlEnabled bool
+	stdout       io.Writer
+	stderr       io.Writer
+	jsonlOutput  string
+	jsonlEnabled bool
+	htmlOutput   string
+	htmlEnabled  bool
 }
 
 func NewCommand(stdout, stderr io.Writer) *Command {
@@ -27,12 +28,13 @@ func NewCommand(stdout, stderr io.Writer) *Command {
 }
 
 func (c *Command) Run(ctx context.Context, args []string) error {
-	normalizedArgs, jsonlOutput, htmlOutput, htmlEnabled, err := NormalizeTestArgs(args)
+	normalizedArgs, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := NormalizeTestArgs(args)
 	if err != nil {
 		return err
 	}
 
 	c.jsonlOutput = jsonlOutput
+	c.jsonlEnabled = jsonlEnabled
 	c.htmlOutput = htmlOutput
 	c.htmlEnabled = htmlEnabled
 
@@ -120,6 +122,7 @@ func (c *Command) runTest(cmd *cobra.Command, args []string) error {
 		Target:       target,
 		Timeout:      timeout,
 		OutputPath:   jsonlOutput,
+		JSONLEnabled: c.jsonlEnabled || cmd.Flags().Changed("jsonl"),
 		HTMLPath:     htmlOutput,
 		HTMLEnabled:  c.htmlEnabled || cmd.Flags().Changed("html"),
 		ResultFilter: resultFilter,
@@ -130,7 +133,7 @@ func (c *Command) runTest(cmd *cobra.Command, args []string) error {
 	return runner.Run(cmd.Context(), cfg)
 }
 
-func NormalizeTestArgs(args []string) ([]string, string, string, bool, error) {
+func NormalizeTestArgs(args []string) ([]string, string, bool, string, bool, error) {
 	normalized := make([]string, 0, len(args))
 	state := normalizedTestArgs{}
 
@@ -146,27 +149,33 @@ func NormalizeTestArgs(args []string) ([]string, string, string, bool, error) {
 		normalized = append(normalized, arg)
 	}
 
-	return normalized, state.jsonlOutput, state.htmlOutput, state.htmlEnabled, nil
+	return normalized, state.jsonlOutput, state.jsonlEnabled, state.htmlOutput, state.htmlEnabled, nil
 }
 
 type normalizedTestArgs struct {
-	jsonlOutput string
-	htmlOutput  string
-	htmlEnabled bool
+	jsonlOutput  string
+	jsonlEnabled bool
+	htmlOutput   string
+	htmlEnabled  bool
 }
 
 func (n *normalizedTestArgs) consumeOutputFlag(args []string, i int, arg string) (int, bool) {
 	switch {
 	case arg == "--jsonl" || arg == "-jsonl":
+		n.jsonlEnabled = true
 		output, consumed := consumeFlagValue(args, i)
 		n.jsonlOutput = output
 
 		return consumed, true
 	case strings.HasPrefix(arg, "--jsonl="):
+		n.jsonlEnabled = true
 		n.jsonlOutput = strings.TrimPrefix(arg, "--jsonl=")
+
 		return 0, true
 	case strings.HasPrefix(arg, "-jsonl="):
+		n.jsonlEnabled = true
 		n.jsonlOutput = strings.TrimPrefix(arg, "-jsonl=")
+
 		return 0, true
 	case arg == "--html" || arg == "-html":
 		n.htmlEnabled = true
