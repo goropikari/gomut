@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"gomut/internal/gomut/result"
 	"os"
 	pathpkg "path"
 	"path/filepath"
@@ -61,7 +62,7 @@ func (f *ExclusionFilter) SkipFile(file string) (bool, string) {
 
 // SkipCandidate reports whether a discovered mutation candidate should be
 // excluded and returns the human-readable reason when it is.
-func (f *ExclusionFilter) SkipCandidate(candidate Candidate) (bool, string) {
+func (f *ExclusionFilter) SkipCandidate(candidate result.Candidate) (bool, string) {
 	if f == nil {
 		return false, ""
 	}

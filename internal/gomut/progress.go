@@ -6,6 +6,14 @@ import (
 	"time"
 )
 
+type ProgressMode string
+
+const (
+	ProgressModeAuto ProgressMode = "auto"
+	ProgressModeOn   ProgressMode = "on"
+	ProgressModeOff  ProgressMode = "off"
+)
+
 // ProgressConfig captures the runtime inputs needed to decide how progress is displayed.
 type ProgressConfig struct {
 	Mode        ProgressMode

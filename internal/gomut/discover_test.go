@@ -1,6 +1,7 @@
 package gomut_test
 
 import (
+	"gomut/internal/gomut/result"
 	"os"
 	"path/filepath"
 	"testing"
@@ -143,53 +144,96 @@ func AlwaysDisabled() bool {
 `), 0o600))
 
 		// Act
-		candidates, err := gomut.DiscoverCandidates(root, []string{"./sample"}, gomut.Target{Mode: gomut.TargetModePackage, Value: "./sample"}, map[string]gomut.FileCoverage{})
+		candidates, err := gomut.DiscoverCandidates(root, []string{"./sample"}, result.Target{Mode: result.TargetModePackage, Value: "./sample"}, map[string]result.FileCoverage{})
 
 		// Assert
 		require.NoError(t, err)
 		require.NotEmpty(t, candidates)
 
-		kinds := map[gomut.MutationKind]bool{}
+		kinds := map[result.MutationKind]bool{}
 
-		var controlFlowCandidate *gomut.Candidate
+		var controlFlowCandidate *result.Candidate
 
 		for i := range candidates {
 			candidate := candidates[i]
 
 			kinds[candidate.Kind] = true
-			if candidate.Kind == gomut.MutationKindControlFlow && candidate.Original == "ready" {
+			if candidate.Kind == result.MutationKindControlFlow && candidate.Original == "ready" {
 				controlFlowCandidate = &candidates[i]
 			}
 		}
 
-		assert.True(t, kinds[gomut.MutationKindComparisonOperator], "expected comparison operator mutation to remain available")
-		assert.True(t, kinds[gomut.MutationKindLogicalOperator], "expected logical operator mutation to remain available")
-		assert.True(t, kinds[gomut.MutationKindArithmeticOperator], "expected arithmetic operator mutation to remain available")
-		assert.True(t, kinds[gomut.MutationKindBitwiseOperator], "expected bitwise operator mutation to be discovered")
-		assert.True(t, kinds[gomut.MutationKindShiftOperator], "expected shift operator mutation to be discovered")
-		assert.True(t, kinds[gomut.MutationKindAssignmentArithmetic], "expected assignment arithmetic mutation to be discovered")
-		assert.True(t, kinds[gomut.MutationKindAssignmentShift], "expected assignment shift mutation to be discovered")
-		assert.True(t, kinds[gomut.MutationKindAssignmentBitwise], "expected assignment bitwise mutation to be discovered")
-		assert.True(t, kinds[gomut.MutationKindIncDec], "expected inc/dec mutation to be discovered")
-		assert.True(t, kinds[gomut.MutationKindGuardClause], "expected guard clause mutation to remain available")
-		assert.True(t, kinds[gomut.MutationKindControlFlow], "expected control flow mutation to be discovered")
-		assert.True(t, kinds[gomut.MutationKindReturn], "expected return mutation to be discovered")
-		assert.True(t, kinds[gomut.MutationKindNilCheck], "expected nil check mutation to be discovered")
-		assert.True(t, kinds[gomut.MutationKindBooleanLiteral], "expected boolean literal mutation to be discovered")
-		assert.True(t, kinds[gomut.MutationKindIntegerLiteral], "expected integer literal mutation to be discovered")
-		assert.True(t, kinds[gomut.MutationKindFloatLiteral], "expected float literal mutation to be discovered")
-		assert.True(t, kinds[gomut.MutationKindRuneLiteral], "expected rune literal mutation to be discovered")
-		assert.True(t, kinds[gomut.MutationKindUnaryNot], "expected unary not mutation to be discovered")
-		assert.True(t, kinds[gomut.MutationKindUnaryMinus], "expected unary minus mutation to be discovered")
-		assert.True(t, kinds[gomut.MutationKindUnaryBitwiseNot], "expected unary bitwise not mutation to be discovered")
-		assert.True(t, kinds[gomut.MutationKindSwitchCondition], "expected switch condition mutation to be discovered")
-		assert.True(t, kinds[gomut.MutationKindStringLiteral], "expected string literal mutation to be discovered")
+		assert.True(t, kinds[result.MutationKindComparisonOperator], "expected comparison operator mutation to remain available")
+		assert.True(t, kinds[result.MutationKindLogicalOperator], "expected logical operator mutation to remain available")
+		assert.True(t, kinds[result.MutationKindArithmeticOperator], "expected arithmetic operator mutation to remain available")
+		assert.True(t, kinds[result.MutationKindBitwiseOperator], "expected bitwise operator mutation to be discovered")
+		assert.True(t, kinds[result.MutationKindShiftOperator], "expected shift operator mutation to be discovered")
+		assert.True(t, kinds[result.MutationKindAssignmentArithmetic], "expected assignment arithmetic mutation to be discovered")
+		assert.True(t, kinds[result.MutationKindAssignmentShift], "expected assignment shift mutation to be discovered")
+		assert.True(t, kinds[result.MutationKindAssignmentBitwise], "expected assignment bitwise mutation to be discovered")
+		assert.True(t, kinds[result.MutationKindIncDec], "expected inc/dec mutation to be discovered")
+		assert.True(t, kinds[result.MutationKindGuardClause], "expected guard clause mutation to remain available")
+		assert.True(t, kinds[result.MutationKindControlFlow], "expected control flow mutation to be discovered")
+		assert.True(t, kinds[result.MutationKindReturn], "expected return mutation to be discovered")
+		assert.True(t, kinds[result.MutationKindNilCheck], "expected nil check mutation to be discovered")
+		assert.True(t, kinds[result.MutationKindBooleanLiteral], "expected boolean literal mutation to be discovered")
+		assert.True(t, kinds[result.MutationKindIntegerLiteral], "expected integer literal mutation to be discovered")
+		assert.True(t, kinds[result.MutationKindFloatLiteral], "expected float literal mutation to be discovered")
+		assert.True(t, kinds[result.MutationKindRuneLiteral], "expected rune literal mutation to be discovered")
+		assert.True(t, kinds[result.MutationKindUnaryNot], "expected unary not mutation to be discovered")
+		assert.True(t, kinds[result.MutationKindUnaryMinus], "expected unary minus mutation to be discovered")
+		assert.True(t, kinds[result.MutationKindUnaryBitwiseNot], "expected unary bitwise not mutation to be discovered")
+		assert.True(t, kinds[result.MutationKindSwitchCondition], "expected switch condition mutation to be discovered")
+		assert.True(t, kinds[result.MutationKindStringLiteral], "expected string literal mutation to be discovered")
 
 		require.NotNil(t, controlFlowCandidate)
 		assert.Contains(t, controlFlowCandidate.File, filepath.ToSlash(filepath.Join("sample", "sample.go")))
-		assert.Equal(t, gomut.MutationKindControlFlow, controlFlowCandidate.Kind)
+		assert.Equal(t, result.MutationKindControlFlow, controlFlowCandidate.Kind)
 		assert.Equal(t, "ready", controlFlowCandidate.Original)
 		assert.Equal(t, "!ready", controlFlowCandidate.Replacement)
 		assert.Positive(t, controlFlowCandidate.Line)
+	})
+
+	t.Run("given import declarations and normal string literals, it excludes import paths from string literal mutations", func(t *testing.T) {
+		// Arrange
+		root := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module example.com/mut\n\ngo 1.26\n"), 0o600))
+		require.NoError(t, os.MkdirAll(filepath.Join(root, "sample"), 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(root, "sample", "sample.go"), []byte(`package sample
+
+import "errors"
+
+import (
+	alias "encoding/json"
+	_ "net/http/pprof"
+	. "math"
+)
+
+var _ = errors.New
+var _ = alias.Marshal
+var _ = Abs
+
+func Greeting() string {
+	return "hello"
+}
+`), 0o600))
+
+		// Act
+		candidates, err := gomut.DiscoverCandidates(root, []string{"./sample"}, result.Target{Mode: result.TargetModePackage, Value: "./sample"}, map[string]result.FileCoverage{})
+
+		// Assert
+		require.NoError(t, err)
+
+		var stringLiterals []result.Candidate
+
+		for _, candidate := range candidates {
+			if candidate.Kind == result.MutationKindStringLiteral {
+				stringLiterals = append(stringLiterals, candidate)
+			}
+		}
+
+		require.Len(t, stringLiterals, 1)
+		assert.Equal(t, `"hello"`, stringLiterals[0].Original)
+		assert.NotContains(t, []string{`"errors"`, `"encoding/json"`, `"net/http/pprof"`, `"math"`}, stringLiterals[0].Original)
 	})
 }

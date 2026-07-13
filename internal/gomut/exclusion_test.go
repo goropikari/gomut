@@ -1,6 +1,7 @@
 package gomut_test
 
 import (
+	"gomut/internal/gomut/result"
 	"os"
 	"path/filepath"
 	"testing"
@@ -82,15 +83,15 @@ func assertSkipCandidateFixture(t *testing.T, source string, ignoredLine, keptLi
 	filter, err := gomut.NewExclusionFilter(root, nil)
 	require.NoError(t, err)
 
-	ignoredCandidate := gomut.Candidate{
+	ignoredCandidate := result.Candidate{
 		File: filepath.ToSlash(filepath.Join("sample", "sample.go")),
 		Line: ignoredLine,
-		Kind: gomut.MutationKindArithmeticOperator,
+		Kind: result.MutationKindArithmeticOperator,
 	}
-	keptCandidate := gomut.Candidate{
+	keptCandidate := result.Candidate{
 		File: filepath.ToSlash(filepath.Join("sample", "sample.go")),
 		Line: keptLine,
-		Kind: gomut.MutationKindArithmeticOperator,
+		Kind: result.MutationKindArithmeticOperator,
 	}
 
 	// Act

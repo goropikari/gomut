@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"gomut/sample"
-	"gomut/sample/hoge"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -355,6 +354,6 @@ func TestApprovalLabel(t *testing.T) {
 
 func TestConstVariable(t *testing.T) {
 	t.Run("sample", func(t *testing.T) {
-		assert.True(t, hoge.Piyo())
+		assert.True(t, sample.ConstVariable())
 	})
 }
