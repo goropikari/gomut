@@ -60,3 +60,8 @@
 - lint: `make lint`
 - コードを編集したら `make fmt` と `make lint` でエラーが出ないことも確認する
 - 変更後は、必要なら `go run ./cmd/gomut test --package ./sample --jsonl` や `./gomut test --all` で挙動確認する
+
+## Pull Requests
+
+- PR を作るときは `.github/pull_request_template.md` に必ず従う
+- PR 本文は GitHub Markdown として正しい記法で書く
