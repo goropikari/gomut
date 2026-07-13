@@ -1,6 +1,7 @@
 package gomut_test
 
 import (
+	"gomut/internal/gomut/result"
 	"os"
 	"path/filepath"
 	"testing"
@@ -54,7 +55,7 @@ baseline:
 		require.NotNil(t, cfg.Target)
 		require.NotNil(t, cfg.Target.Mode)
 		require.NotNil(t, cfg.Target.Value)
-		assert.Equal(t, gomut.TargetModePackage, *cfg.Target.Mode)
+		assert.Equal(t, result.TargetModePackage, *cfg.Target.Mode)
 		assert.Equal(t, "./sample", *cfg.Target.Value)
 		require.NotNil(t, cfg.Timeout)
 		assert.Equal(t, "15s", *cfg.Timeout)

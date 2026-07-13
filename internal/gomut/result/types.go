@@ -1,6 +1,4 @@
-package gomut
-
-import "time"
+package result
 
 type TargetMode string
 
@@ -51,14 +49,6 @@ type Target struct {
 	Mode  TargetMode `json:"mode"`
 	Value string     `json:"value"`
 }
-
-type ProgressMode string
-
-const (
-	ProgressModeAuto ProgressMode = "auto"
-	ProgressModeOn   ProgressMode = "on"
-	ProgressModeOff  ProgressMode = "off"
-)
 
 type Summary struct {
 	Total      int `json:"total"`
@@ -111,22 +101,19 @@ type CoverageRange struct {
 	Covered   bool
 }
 
-type Result struct {
-	Candidate Candidate
-	Result    MutationResult
-	Message   string
-}
+func UpdateSummary(summary Summary, mutationResult MutationResult) Summary {
+	switch mutationResult {
+	case MutationResultKilled:
+		summary.Killed++
+	case MutationResultLived:
+		summary.Lived++
+	case MutationResultNotCovered:
+		summary.NotCovered++
+	case MutationResultTimedOut:
+		summary.TimedOut++
+	case MutationResultNotViable:
+		summary.NotViable++
+	}
 
-type RunConfig struct {
-	Target  Target
-	Timeout time.Duration
-	// Parallel controls how many mutation workers the runner may use.
-	Parallel     int
-	Exclude      []string
-	OutputPath   string
-	JSONLEnabled bool
-	HTMLPath     string
-	HTMLEnabled  bool
-	ProgressMode ProgressMode
-	ResultFilter MutationResultFilter
+	return summary
 }

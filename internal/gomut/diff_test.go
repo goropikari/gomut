@@ -2,6 +2,7 @@ package gomut_test
 
 import (
 	"context"
+	"gomut/internal/gomut/result"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -100,7 +101,7 @@ func TestDiscoverCandidatesWithDiffTarget(t *testing.T) {
 		require.NoError(t, err)
 
 		// Act
-		candidates, err := gomut.DiscoverCandidates(root, []string{"example.com/mut/sample"}, gomut.Target{Mode: gomut.TargetModeDiff, Value: "HEAD~1..HEAD"}, map[string]gomut.FileCoverage{})
+		candidates, err := gomut.DiscoverCandidates(root, []string{"example.com/mut/sample"}, result.Target{Mode: result.TargetModeDiff, Value: "HEAD~1..HEAD"}, map[string]result.FileCoverage{})
 
 		// Assert
 		require.NoError(t, err)

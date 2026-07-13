@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"gomut/internal/gomut/result"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -89,13 +90,13 @@ func TestRunnerRunCandidateLoopParallel(t *testing.T) {
 		maxFlight := new(int32)
 		runner := newParallelRunnerFixture(started, release, inFlight, maxFlight, &stdout, &stderr)
 		candidates := parallelCandidates()
-		cfg := RunConfig{Parallel: 2, ResultFilter: MutationResultFilter{}}
+		cfg := RunConfig{Parallel: 2, ResultFilter: result.MutationResultFilter{}}
 		progress := NewProgressReporter(ProgressConfig{Mode: ProgressModeOff, Writer: &stderr, Interactive: false, CI: true, Total: len(candidates)})
 		jsonl := &bytes.Buffer{}
 
 		var (
-			summary Summary
-			records []Record
+			summary result.Summary
+			records []result.Record
 			runErr  error
 		)
 
@@ -138,7 +139,7 @@ func TestRunnerRunCandidateLoopParallel(t *testing.T) {
 		require.Len(t, lines, 3)
 
 		for i, line := range lines {
-			var record Record
+			var record result.Record
 			require.NoError(t, json.Unmarshal(line, &record))
 			assert.Equal(t, records[i].Mutation.File, record.Mutation.File)
 			assert.Equal(t, records[i].Summary.Total, record.Summary.Total)
@@ -162,7 +163,7 @@ func newParallelRunnerFixture(started chan<- string, release <-chan struct{}, in
 	return &Runner{
 		stdout: stdout,
 		stderr: stderr,
-		executeMutationFunc: func(ctx context.Context, root string, candidate Candidate, timeout time.Duration) (MutationResult, string, error) {
+		executeMutationFunc: func(ctx context.Context, root string, candidate result.Candidate, timeout time.Duration) (result.MutationResult, string, error) {
 			active := atomic.AddInt32(inFlight, 1)
 			observeMaxFlight(active, maxFlight)
 
@@ -197,25 +198,25 @@ func waitForParallelRelease(ctx context.Context, release <-chan struct{}) error 
 	}
 }
 
-func parallelMutationResult(file string) (MutationResult, string, error) {
+func parallelMutationResult(file string) (result.MutationResult, string, error) {
 	switch file {
 	case "a.go":
 		time.Sleep(100 * time.Millisecond)
-		return MutationResultKilled, "a", nil
+		return result.MutationResultKilled, "a", nil
 	case "b.go":
-		return MutationResultNotViable, "b", fmt.Errorf("boom")
+		return result.MutationResultNotViable, "b", fmt.Errorf("boom")
 	default:
 		time.Sleep(10 * time.Millisecond)
-		return MutationResultKilled, "c", nil
+		return result.MutationResultKilled, "c", nil
 	}
 }
 
-func parallelCandidates() []Candidate {
-	return []Candidate{
+func parallelCandidates() []result.Candidate {
+	return []result.Candidate{
 		{
 			File:        "a.go",
 			Line:        10,
-			Kind:        MutationKindComparisonOperator,
+			Kind:        result.MutationKindComparisonOperator,
 			Original:    "==",
 			Replacement: "!=",
 			PackagePath: "./sample",
@@ -224,7 +225,7 @@ func parallelCandidates() []Candidate {
 		{
 			File:        "b.go",
 			Line:        11,
-			Kind:        MutationKindComparisonOperator,
+			Kind:        result.MutationKindComparisonOperator,
 			Original:    "==",
 			Replacement: "!=",
 			PackagePath: "./sample",
@@ -233,7 +234,7 @@ func parallelCandidates() []Candidate {
 		{
 			File:        "c.go",
 			Line:        12,
-			Kind:        MutationKindComparisonOperator,
+			Kind:        result.MutationKindComparisonOperator,
 			Original:    "==",
 			Replacement: "!=",
 			PackagePath: "./sample",

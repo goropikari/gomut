@@ -1,7 +1,9 @@
-package gomut_test
+package report_test
 
 import (
 	"bytes"
+	"gomut/internal/gomut/report"
+	"gomut/internal/gomut/result"
 	"html"
 	"os"
 	"path/filepath"
@@ -10,8 +12,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	gomut "gomut/internal/gomut"
 )
 
 func TestWriteHTML(t *testing.T) {
@@ -29,12 +29,12 @@ func TestWriteHTML(t *testing.T) {
 		comparisonStart := strings.Index(source, "==")
 		require.NotEqual(t, -1, comparisonStart)
 
-		records := []gomut.Record{
+		records := []result.Record{
 			{
-				Target:    gomut.Target{Mode: gomut.TargetModePackage, Value: "./sample"},
+				Target:    result.Target{Mode: result.TargetModePackage, Value: "./sample"},
 				StartedAt: "2026-07-12T01:02:03Z",
 				Command:   "gomut test --package ./sample --html",
-				Summary: gomut.Summary{
+				Summary: result.Summary{
 					Total:      2,
 					Killed:     1,
 					Lived:      1,
@@ -42,13 +42,13 @@ func TestWriteHTML(t *testing.T) {
 					TimedOut:   0,
 					NotViable:  0,
 				},
-				Mutation: gomut.MutationMetadata{
+				Mutation: result.MutationMetadata{
 					File:        "sample.go",
 					Line:        4,
-					Kind:        gomut.MutationKindComparisonOperator,
+					Kind:        result.MutationKindComparisonOperator,
 					Original:    "==",
 					Replacement: "!=",
-					Result:      gomut.MutationResultKilled,
+					Result:      result.MutationResultKilled,
 					Message:     "killed by tests",
 					Start:       comparisonStart,
 					End:         comparisonStart + len("=="),
@@ -57,7 +57,7 @@ func TestWriteHTML(t *testing.T) {
 		}
 
 		// Act
-		err = gomut.WriteHTML(&output, gomut.HTMLReportData{
+		err = report.WriteHTML(&output, report.HTMLReportData{
 			Root:      root,
 			Target:    records[0].Target,
 			StartedAt: records[0].StartedAt,

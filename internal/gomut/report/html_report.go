@@ -1,7 +1,8 @@
-package gomut
+package report
 
 import (
 	"fmt"
+	"gomut/internal/gomut/result"
 	"html/template"
 	"io"
 	"os"
@@ -12,11 +13,11 @@ import (
 // HTMLReportData contains the metadata and records needed to render the HTML report.
 type HTMLReportData struct {
 	Root      string
-	Target    Target
+	Target    result.Target
 	StartedAt string
 	Command   string
-	Summary   Summary
-	Records   []Record
+	Summary   result.Summary
+	Records   []result.Record
 }
 
 // WriteHTML renders a self-contained HTML report for the provided mutation records.
@@ -32,10 +33,10 @@ func WriteHTML(w io.Writer, report HTMLReportData) error {
 }
 
 type htmlReportView struct {
-	Target        Target
+	Target        result.Target
 	StartedAt     string
 	Command       string
-	Summary       Summary
+	Summary       result.Summary
 	MutationScore string
 	Records       []htmlMutationView
 }
@@ -97,7 +98,7 @@ type cachedSource struct {
 	ok    bool
 }
 
-func buildMutationCodeViews(root string, mutation MutationMetadata, cache map[string]cachedSource) (string, string) {
+func buildMutationCodeViews(root string, mutation result.MutationMetadata, cache map[string]cachedSource) (string, string) {
 	if root == "" || mutation.File == "" || mutation.Line <= 0 {
 		return "", ""
 	}
@@ -240,7 +241,7 @@ func lineBounds(total, line, context int) (int, int) {
 	return start, end
 }
 
-func formatMutationScore(summary Summary) string {
+func formatMutationScore(summary result.Summary) string {
 	denominator := summary.Total - summary.NotViable - summary.NotCovered
 	if denominator <= 0 {
 		return "0.0%"

@@ -1,4 +1,4 @@
-package gomut
+package report
 
 const htmlTemplateSource = `<!doctype html>
 <html lang="en">

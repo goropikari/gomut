@@ -1,4 +1,4 @@
-package gomut
+package result
 
 import (
 	"fmt"
