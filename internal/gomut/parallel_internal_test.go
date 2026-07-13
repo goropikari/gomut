@@ -71,6 +71,24 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, runtime.NumCPU(), cfg.Parallel)
 	})
+
+	t.Run("given verbose enabled on the CLI, it is propagated to the run config", func(t *testing.T) {
+		// Arrange
+		root := t.TempDir()
+		t.Chdir(root)
+
+		command := NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
+		cmd := command.newTestCommand()
+		require.NoError(t, cmd.Flags().Set("package", "./sample"))
+		require.NoError(t, cmd.Flags().Set("verbose", "true"))
+
+		// Act
+		cfg, err := command.buildTestRunConfig(cmd)
+
+		// Assert
+		require.NoError(t, err)
+		assert.True(t, cfg.Verbose)
+	})
 }
 
 func TestRunnerRunCandidateLoopParallel(t *testing.T) {

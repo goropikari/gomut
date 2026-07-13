@@ -77,6 +77,7 @@ func (c *Command) newTestCommand() *cobra.Command {
 	flags.Int("parallel", 0, "number of concurrent mutation workers")
 	flags.String("config", "", "config file path")
 	flags.String("progress", string(ProgressModeAuto), "progress display mode: auto, on, or off")
+	flags.Bool("verbose", false, "show exclusion notices on stderr")
 	flags.String("jsonl", "", "jsonl output file path")
 	flags.Lookup("jsonl").NoOptDefVal = ""
 	flags.String("html", "", "html output file path")
