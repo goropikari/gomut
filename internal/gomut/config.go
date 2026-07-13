@@ -42,6 +42,7 @@ func (s *yamlStringList) UnmarshalYAML(value *yaml.Node) error {
 		}
 
 		*s = []string{value.Value}
+
 		return nil
 	case yaml.SequenceNode:
 		values := make([]string, 0, len(value.Content))
@@ -50,6 +51,7 @@ func (s *yamlStringList) UnmarshalYAML(value *yaml.Node) error {
 		}
 
 		*s = values
+
 		return nil
 	case 0:
 		*s = nil
