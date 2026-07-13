@@ -97,23 +97,41 @@ var unaryMutationSpecs = map[token.Token]unaryMutationSpec{
 	token.XOR: {kind: result.MutationKindUnaryBitwiseNot},
 }
 
-func mutationCandidateFromNode(root string, fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target result.Target, coverage result.FileCoverage) (result.Candidate, bool) {
-	handlers := []func(string, *token.FileSet, []byte, string, string, ast.Node, result.Target, result.FileCoverage) (result.Candidate, bool){
-		mutationFromBinaryNode,
-		mutationFromBooleanNode,
-		mutationFromBasicLitNode,
-		mutationFromUnaryNode,
-		mutationFromAssignNode,
-		mutationFromIncDecNode,
-		mutationFromIfNode,
-		mutationFromSwitchNode,
-		mutationFromReturnNode,
+func mutationCandidateFromNode(root string, fset *token.FileSet, src []byte, astFile *ast.File, file, pkg string, node ast.Node, target result.Target, coverage result.FileCoverage) (result.Candidate, bool) {
+	if candidate, ok := mutationFromBinaryNode(root, fset, src, file, pkg, node, target, coverage); ok {
+		return candidate, true
 	}
 
-	for _, handler := range handlers {
-		if candidate, ok := handler(root, fset, src, file, pkg, node, target, coverage); ok {
-			return candidate, true
-		}
+	if candidate, ok := mutationFromBooleanNode(root, fset, src, file, pkg, node, target, coverage); ok {
+		return candidate, true
+	}
+
+	if candidate, ok := mutationFromBasicLitNode(root, fset, src, astFile, file, pkg, node, target, coverage); ok {
+		return candidate, true
+	}
+
+	if candidate, ok := mutationFromUnaryNode(root, fset, src, file, pkg, node, target, coverage); ok {
+		return candidate, true
+	}
+
+	if candidate, ok := mutationFromAssignNode(root, fset, src, file, pkg, node, target, coverage); ok {
+		return candidate, true
+	}
+
+	if candidate, ok := mutationFromIncDecNode(root, fset, src, file, pkg, node, target, coverage); ok {
+		return candidate, true
+	}
+
+	if candidate, ok := mutationFromIfNode(root, fset, src, file, pkg, node, target, coverage); ok {
+		return candidate, true
+	}
+
+	if candidate, ok := mutationFromSwitchNode(root, fset, src, file, pkg, node, target, coverage); ok {
+		return candidate, true
+	}
+
+	if candidate, ok := mutationFromReturnNode(root, fset, src, file, pkg, node, target, coverage); ok {
+		return candidate, true
 	}
 
 	return result.Candidate{}, false
@@ -141,13 +159,31 @@ func mutationFromBooleanNode(root string, fset *token.FileSet, src []byte, file,
 	return mutationFromBooleanLiteral(root, fset, src, file, pkg, ident, target, coverage)
 }
 
-func mutationFromBasicLitNode(root string, fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target result.Target, coverage result.FileCoverage) (result.Candidate, bool) {
+func mutationFromBasicLitNode(root string, fset *token.FileSet, src []byte, astFile *ast.File, file, pkg string, node ast.Node, target result.Target, coverage result.FileCoverage) (result.Candidate, bool) {
 	basicLit, ok := node.(*ast.BasicLit)
 	if !ok {
 		return result.Candidate{}, false
 	}
 
+	if isImportPathBasicLit(astFile, basicLit) {
+		return result.Candidate{}, false
+	}
+
 	return mutationFromBasicLit(root, fset, src, file, pkg, basicLit, target, coverage)
+}
+
+func isImportPathBasicLit(astFile *ast.File, node *ast.BasicLit) bool {
+	if astFile == nil || node == nil {
+		return false
+	}
+
+	for _, spec := range astFile.Imports {
+		if spec != nil && spec.Path == node {
+			return true
+		}
+	}
+
+	return false
 }
 
 func mutationFromUnaryNode(root string, fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target result.Target, coverage result.FileCoverage) (result.Candidate, bool) {

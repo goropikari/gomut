@@ -100,7 +100,7 @@ func discoverFileCandidates(root, pkg, file string, target result.Target, covera
 	)
 
 	ast.Inspect(astFile, func(n ast.Node) bool {
-		if candidate, ok := mutationCandidateFromNode(root, fset, src, file, pkg, n, target, covered); ok {
+		if candidate, ok := mutationCandidateFromNode(root, fset, src, astFile, file, pkg, n, target, covered); ok {
 			if filter != nil {
 				if skipped, reason := filter.SkipCandidate(candidate); skipped {
 					notices = append(notices, ExclusionNotice{File: candidate.File, Line: candidate.Line, Reason: reason})

@@ -193,4 +193,47 @@ func AlwaysDisabled() bool {
 		assert.Equal(t, "!ready", controlFlowCandidate.Replacement)
 		assert.Positive(t, controlFlowCandidate.Line)
 	})
+
+	t.Run("given import declarations and normal string literals, it excludes import paths from string literal mutations", func(t *testing.T) {
+		// Arrange
+		root := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module example.com/mut\n\ngo 1.26\n"), 0o600))
+		require.NoError(t, os.MkdirAll(filepath.Join(root, "sample"), 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(root, "sample", "sample.go"), []byte(`package sample
+
+import "errors"
+
+import (
+	alias "encoding/json"
+	_ "net/http/pprof"
+	. "math"
+)
+
+var _ = errors.New
+var _ = alias.Marshal
+var _ = Abs
+
+func Greeting() string {
+	return "hello"
+}
+`), 0o600))
+
+		// Act
+		candidates, err := gomut.DiscoverCandidates(root, []string{"./sample"}, result.Target{Mode: result.TargetModePackage, Value: "./sample"}, map[string]result.FileCoverage{})
+
+		// Assert
+		require.NoError(t, err)
+
+		var stringLiterals []result.Candidate
+
+		for _, candidate := range candidates {
+			if candidate.Kind == result.MutationKindStringLiteral {
+				stringLiterals = append(stringLiterals, candidate)
+			}
+		}
+
+		require.Len(t, stringLiterals, 1)
+		assert.Equal(t, `"hello"`, stringLiterals[0].Original)
+		assert.NotContains(t, []string{`"errors"`, `"encoding/json"`, `"net/http/pprof"`, `"math"`}, stringLiterals[0].Original)
+	})
 }
