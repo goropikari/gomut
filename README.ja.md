@@ -21,6 +21,7 @@
 - mutation ごとに `go test` を実行して結果を分類
 - `--timeout` で mutation ごとのタイムアウトを設定
 - `--progress` で進捗表示を制御
+- `--kind` で mutation 種別を絞り込み
 - 結果を JSON Lines 形式で出力
 - HTML レポートを任意で生成
 
@@ -85,6 +86,8 @@ gomut test --diff main
 gomut test --package ./internal/gomut --jsonl
 gomut test --package ./internal/gomut --jsonl mutations.jsonl
 gomut test --package ./internal/gomut --type lived --jsonl
+gomut test --package ./internal/gomut --kind comparison_operator --jsonl
+gomut test --package ./internal/gomut --kind comparison_operator,return --kind nil_check --jsonl
 gomut test --package ./internal/gomut --jsonl mutations.jsonl --html report.html
 ```
 
@@ -144,6 +147,9 @@ progress: on
 parallel: 4
 jsonl: mutations.jsonl
 html: report.html
+kind:
+  - comparison_operator
+  - return
 exclude:
   - "*.pb.go"
   - "*_mock.go"
@@ -161,6 +167,9 @@ JSON Lines はデフォルトで `stdout` に出ます。
 - `--html <path>` を指定して `--jsonl` を付けない場合、JSONL 出力は抑止される
 - `--progress=auto|on|off` で mutation の進捗表示を `stderr` に出すか制御できる
 - `--progress` の既定値は `auto` で、対話的な端末では進捗を表示し、非 TTY や CI では静かに動作する
+- `--kind` は mutation 候補を実行前に絞り込む
+- `--kind` は単一指定、カンマ区切り、繰り返し指定に対応する
+- `--kind` は JSONL レコード、HTML レポート、summary のすべてに反映される
 - `--type` は mutation 実行後の結果を絞り込む
 - `--type` は単一指定、カンマ区切り、繰り返し指定に対応する
 - `--type` は JSONL 出力と `stderr` の summary の両方に反映される

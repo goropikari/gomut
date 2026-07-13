@@ -65,3 +65,4 @@
 
 - PR を作るときは `.github/pull_request_template.md` に必ず従う
 - PR 本文は GitHub Markdown として正しい記法で書く
+- issue 由来の PR では、`Fixes #<issue number>` または `Closes #<issue number>` を PR 本文に含め、merge 時に GitHub が issue を自動 close するようにする
