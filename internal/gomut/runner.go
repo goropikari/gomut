@@ -47,7 +47,7 @@ func (r *Runner) Run(ctx context.Context, cfg RunConfig) (err error) {
 		return err
 	}
 
-	r.reportExclusionNotices(notices)
+	r.reportExclusionNotices(notices, cfg.Verbose)
 
 	return r.runCandidates(ctx, root, cfg, candidates)
 }
@@ -123,7 +123,11 @@ func (r *Runner) runCandidates(ctx context.Context, root string, cfg RunConfig, 
 	return nil
 }
 
-func (r *Runner) reportExclusionNotices(notices []ExclusionNotice) {
+func (r *Runner) reportExclusionNotices(notices []ExclusionNotice, verbose bool) {
+	if !verbose {
+		return
+	}
+
 	for _, notice := range notices {
 		if notice.Line > 0 {
 			fmt.Fprintf(r.stderr, "excluded %s:%d: %s\n", notice.File, notice.Line, notice.Reason)

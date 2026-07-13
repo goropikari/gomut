@@ -54,6 +54,7 @@ type RunConfig struct {
 	HTMLEnabled  bool
 	ProgressMode ProgressMode
 	ResultFilter result.MutationResultFilter
+	Verbose      bool
 }
 
 type testRunInputs struct {
@@ -66,6 +67,7 @@ type testRunInputs struct {
 	parallelChanged bool
 	progressMode    string
 	progressChanged bool
+	verbose         bool
 	jsonlOutput     string
 	jsonlEnabled    bool
 	htmlOutput      string
@@ -162,6 +164,7 @@ func (c *Command) buildTestRunConfig(cmd *cobra.Command) (RunConfig, error) {
 		HTMLEnabled:  inputs.htmlEnabled,
 		ProgressMode: progressMode,
 		ResultFilter: resultFilter,
+		Verbose:      inputs.verbose,
 	}, nil
 }
 
@@ -178,6 +181,7 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command) (testRunInputs, error) {
 	diffRange, _ := cmd.Flags().GetString("diff")
 	resultTypes, _ := cmd.Flags().GetStringSlice("type")
 	progressMode, _ := cmd.Flags().GetString("progress")
+	verbose, _ := cmd.Flags().GetBool("verbose")
 
 	return testRunInputs{
 		pkgTarget:       pkgTarget,
@@ -189,6 +193,7 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command) (testRunInputs, error) {
 		parallelChanged: cmd.Flags().Changed("parallel"),
 		progressMode:    progressMode,
 		progressChanged: cmd.Flags().Changed("progress"),
+		verbose:         verbose,
 		jsonlOutput:     c.jsonlOutput,
 		jsonlEnabled:    c.jsonlEnabled,
 		htmlOutput:      c.htmlOutput,

@@ -217,7 +217,7 @@ exclude:
   - internal/generated
 ```
 
-`//gomut:ignore` applies to the annotated function, statement, or block. When a candidate is excluded, `gomut` reports the reason on `stderr` so it is clear why the mutation did not run.
+`//gomut:ignore` applies to the annotated function, statement, or block. By default, excluded candidates are kept quiet on `stderr`. Pass `--verbose` to print the exclusion reason on `stderr` for diagnostics.
 
 ## Supported Mutations
 

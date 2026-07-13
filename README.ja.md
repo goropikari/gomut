@@ -217,7 +217,7 @@ exclude:
   - internal/generated
 ```
 
-`//gomut:ignore` は、注釈した関数・文・ブロックに適用されます。候補が除外されたときは、mutation が実行されなかった理由が `stderr` に出ます。
+`//gomut:ignore` は、注釈した関数・文・ブロックに適用されます。通常は除外理由を `stderr` に出しません。診断が必要なときは `--verbose` を付けると、除外理由を `stderr` に表示します。
 
 ## 対応 mutation
 
