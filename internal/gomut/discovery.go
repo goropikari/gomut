@@ -16,7 +16,7 @@ import (
 )
 
 func DiscoverCandidates(root string, packages []string, target result.Target, coverage map[string]result.FileCoverage) ([]result.Candidate, error) {
-	candidates, _, err := discoverCandidates(root, packages, target, coverage, nil)
+	candidates, _, err := discoverCandidates(root, packages, target, coverage, nil, result.MutationKindFilter{})
 	if err != nil {
 		return nil, err
 	}
@@ -26,11 +26,11 @@ func DiscoverCandidates(root string, packages []string, target result.Target, co
 
 // DiscoverCandidatesWithExclusions collects mutation candidates and exclusion
 // notices using the provided exclusion filter.
-func DiscoverCandidatesWithExclusions(root string, packages []string, target result.Target, coverage map[string]result.FileCoverage, filter *ExclusionFilter) ([]result.Candidate, []ExclusionNotice, error) {
-	return discoverCandidates(root, packages, target, coverage, filter)
+func DiscoverCandidatesWithExclusions(root string, packages []string, target result.Target, coverage map[string]result.FileCoverage, filter *ExclusionFilter, kindFilter result.MutationKindFilter) ([]result.Candidate, []ExclusionNotice, error) {
+	return discoverCandidates(root, packages, target, coverage, filter, kindFilter)
 }
 
-func discoverCandidates(root string, packages []string, target result.Target, coverage map[string]result.FileCoverage, filter *ExclusionFilter) ([]result.Candidate, []ExclusionNotice, error) {
+func discoverCandidates(root string, packages []string, target result.Target, coverage map[string]result.FileCoverage, filter *ExclusionFilter, kindFilter result.MutationKindFilter) ([]result.Candidate, []ExclusionNotice, error) {
 	var (
 		candidates []result.Candidate
 		notices    []ExclusionNotice
@@ -54,7 +54,7 @@ func discoverCandidates(root string, packages []string, target result.Target, co
 				}
 			}
 
-			fileCandidates, fileNotices, err := discoverFileCandidates(root, pkg, file, target, coverage, filter)
+			fileCandidates, fileNotices, err := discoverFileCandidates(root, pkg, file, target, coverage, filter, kindFilter)
 			if err != nil {
 				return nil, nil, fmt.Errorf("discover candidates for %s: %w", file, err)
 			}
@@ -79,7 +79,7 @@ func discoverCandidates(root string, packages []string, target result.Target, co
 	return candidates, notices, nil
 }
 
-func discoverFileCandidates(root, pkg, file string, target result.Target, coverage map[string]result.FileCoverage, filter *ExclusionFilter) ([]result.Candidate, []ExclusionNotice, error) {
+func discoverFileCandidates(root, pkg, file string, target result.Target, coverage map[string]result.FileCoverage, filter *ExclusionFilter, kindFilter result.MutationKindFilter) ([]result.Candidate, []ExclusionNotice, error) {
 	src, err := os.ReadFile(file)
 	if err != nil {
 		return nil, nil, err
@@ -101,6 +101,10 @@ func discoverFileCandidates(root, pkg, file string, target result.Target, covera
 
 	ast.Inspect(astFile, func(n ast.Node) bool {
 		if candidate, ok := mutationCandidateFromNode(root, fset, src, astFile, file, pkg, n, target, covered); ok {
+			if !kindFilter.Matches(candidate.Kind) {
+				return true
+			}
+
 			if filter != nil {
 				if skipped, reason := filter.SkipCandidate(candidate); skipped {
 					notices = append(notices, ExclusionNotice{File: candidate.File, Line: candidate.Line, Reason: reason})

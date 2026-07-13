@@ -72,7 +72,7 @@ func (r *Runner) discoverCandidates(ctx context.Context, originalRoot, root stri
 		return nil, nil, fmt.Errorf("build exclusion filter: %w", err)
 	}
 
-	candidates, notices, err := DiscoverCandidatesWithExclusions(root, packages, cfg.Target, coverage, filter)
+	candidates, notices, err := DiscoverCandidatesWithExclusions(root, packages, cfg.Target, coverage, filter, cfg.KindFilter)
 	if err != nil {
 		return nil, nil, fmt.Errorf("discover candidates: %w", err)
 	}

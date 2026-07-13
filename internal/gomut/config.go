@@ -25,9 +25,38 @@ type Config struct {
 	JSONL    *string         `yaml:"jsonl,omitempty"`
 	HTML     *string         `yaml:"html,omitempty"`
 	Type     []string        `yaml:"type,omitempty"`
+	Kind     yamlStringList  `yaml:"kind,omitempty"`
 	Parallel *int            `yaml:"parallel,omitempty"`
 	Exclude  []string        `yaml:"exclude,omitempty"`
 	Baseline *BaselineConfig `yaml:"baseline,omitempty"`
+}
+
+type yamlStringList []string
+
+func (s *yamlStringList) UnmarshalYAML(value *yaml.Node) error {
+	switch value.Kind {
+	case yaml.ScalarNode:
+		if strings.TrimSpace(value.Value) == "" {
+			*s = nil
+			return nil
+		}
+
+		*s = []string{value.Value}
+		return nil
+	case yaml.SequenceNode:
+		values := make([]string, 0, len(value.Content))
+		for _, node := range value.Content {
+			values = append(values, node.Value)
+		}
+
+		*s = values
+		return nil
+	case 0:
+		*s = nil
+		return nil
+	default:
+		return fmt.Errorf("kind must be a string or sequence")
+	}
 }
 
 // ConfigTarget represents the target selection block in the config file.
@@ -48,6 +77,7 @@ type RunConfig struct {
 	Timeout      time.Duration
 	Parallel     int
 	Exclude      []string
+	KindFilter   result.MutationKindFilter
 	OutputPath   string
 	JSONLEnabled bool
 	HTMLPath     string
@@ -68,6 +98,8 @@ type testRunInputs struct {
 	progressMode    string
 	progressChanged bool
 	verbose         bool
+	kind            []string
+	kindChanged     bool
 	jsonlOutput     string
 	jsonlEnabled    bool
 	htmlOutput      string
@@ -143,6 +175,11 @@ func (c *Command) buildTestRunConfig(cmd *cobra.Command) (RunConfig, error) {
 		return RunConfig{}, err
 	}
 
+	kindFilter, err := result.ParseMutationKindFilter(inputs.kind)
+	if err != nil {
+		return RunConfig{}, err
+	}
+
 	target, err := ResolveTarget(inputs.pkgTarget, inputs.allTarget, inputs.diffRange)
 	if err != nil {
 		return RunConfig{}, err
@@ -158,6 +195,7 @@ func (c *Command) buildTestRunConfig(cmd *cobra.Command) (RunConfig, error) {
 		Timeout:      inputs.timeout,
 		Parallel:     inputs.parallel,
 		Exclude:      append([]string(nil), inputs.config.Exclude...),
+		KindFilter:   kindFilter,
 		OutputPath:   inputs.jsonlOutput,
 		JSONLEnabled: inputs.jsonlEnabled,
 		HTMLPath:     inputs.htmlOutput,
@@ -182,6 +220,7 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command) (testRunInputs, error) {
 	resultTypes, _ := cmd.Flags().GetStringSlice("type")
 	progressMode, _ := cmd.Flags().GetString("progress")
 	verbose, _ := cmd.Flags().GetBool("verbose")
+	kind, _ := cmd.Flags().GetStringSlice("kind")
 
 	return testRunInputs{
 		pkgTarget:       pkgTarget,
@@ -194,6 +233,8 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command) (testRunInputs, error) {
 		progressMode:    progressMode,
 		progressChanged: cmd.Flags().Changed("progress"),
 		verbose:         verbose,
+		kind:            append([]string(nil), kind...),
+		kindChanged:     cmd.Flags().Changed("kind"),
 		jsonlOutput:     c.jsonlOutput,
 		jsonlEnabled:    c.jsonlEnabled,
 		htmlOutput:      c.htmlOutput,
@@ -211,6 +252,7 @@ func (c *Command) applyTestConfigDefaults(inputs *testRunInputs) error {
 	}
 
 	c.applyResultTypeConfigDefaults(inputs)
+	c.applyKindConfigDefaults(inputs)
 
 	if err := c.applyTimeoutConfigDefaults(inputs); err != nil {
 		return err
@@ -237,6 +279,14 @@ func (c *Command) applyResultTypeConfigDefaults(inputs *testRunInputs) {
 	}
 
 	inputs.resultTypes = append([]string(nil), inputs.config.Type...)
+}
+
+func (c *Command) applyKindConfigDefaults(inputs *testRunInputs) {
+	if inputs.kindChanged || len(inputs.config.Kind) == 0 {
+		return
+	}
+
+	inputs.kind = append([]string(nil), inputs.config.Kind...)
 }
 
 func (c *Command) applyTimeoutConfigDefaults(inputs *testRunInputs) error {

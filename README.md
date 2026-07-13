@@ -21,6 +21,7 @@ For the Japanese version, see [README.ja.md](README.ja.md).
 - Execute `go test` per mutation and classify the result
 - Configure a per-mutation timeout with `--timeout`
 - Control progress reporting with `--progress`
+- Filter mutation candidates by kind with `--kind`
 - Emit results as JSON Lines
 - Generate an optional HTML report
 
@@ -85,6 +86,8 @@ gomut test --diff main
 gomut test --package ./sample --jsonl
 gomut test --package ./sample --jsonl mutations.jsonl
 gomut test --package ./sample --type lived --jsonl
+gomut test --package ./sample --kind comparison_operator --jsonl
+gomut test --package ./sample --kind comparison_operator,return --kind nil_check --jsonl
 gomut test --package ./sample --jsonl mutations.jsonl --html report.html
 ```
 
@@ -144,6 +147,9 @@ progress: on
 parallel: 4
 jsonl: mutations.jsonl
 html: report.html
+kind:
+  - comparison_operator
+  - return
 exclude:
   - "*.pb.go"
   - "*_mock.go"
@@ -161,6 +167,9 @@ By default, JSON Lines are written to `stdout`.
 - `--html <path>` without `--jsonl` suppresses JSONL output
 - `--progress=auto|on|off` controls mutation progress reporting on `stderr`
 - `--progress` defaults to `auto`, which shows progress in interactive terminals and stays quiet in non-TTY and CI runs
+- `--kind` filters mutation candidates before execution
+- `--kind` accepts single values, comma-separated values, and repeated flags
+- `--kind` affects the JSONL records, HTML report, and summary counts
 - `--type` filters emitted mutation results after execution
 - `--type` accepts single values, comma-separated values, and repeated flags
 - `--type` affects both JSONL output and the summary on `stderr`

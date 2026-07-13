@@ -73,6 +73,7 @@ func (c *Command) newTestCommand() *cobra.Command {
 	flags.Bool("all", false, "test all packages")
 	flags.String("diff", "", "git diff range or branch name, for example HEAD~1..HEAD or main")
 	flags.StringSlice("type", nil, "mutation result types to output")
+	flags.StringSlice("kind", nil, "mutation kinds to run")
 	flags.Duration("timeout", 10*time.Second, "timeout per mutation")
 	flags.Int("parallel", 0, "number of concurrent mutation workers")
 	flags.String("config", "", "config file path")

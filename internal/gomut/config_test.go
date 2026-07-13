@@ -39,6 +39,9 @@ jsonl: mutations.jsonl
 html: report.html
 type:
   - lived
+kind:
+  - comparison_operator
+  - return
 parallel: 3
 exclude:
   - internal/generated
@@ -67,6 +70,8 @@ baseline:
 		assert.Equal(t, "report.html", *cfg.HTML)
 		require.Len(t, cfg.Type, 1)
 		assert.Equal(t, "lived", cfg.Type[0])
+		require.Len(t, cfg.Kind, 2)
+		assert.Equal(t, []string{"comparison_operator", "return"}, []string(cfg.Kind))
 		require.NotNil(t, cfg.Parallel)
 		assert.Equal(t, 3, *cfg.Parallel)
 		assert.Equal(t, []string{"internal/generated"}, cfg.Exclude)
@@ -89,5 +94,20 @@ baseline:
 		// Assert
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), ".gomut.yaml")
+	})
+
+	t.Run("given a scalar kind value, it parses the value as a single-item list", func(t *testing.T) {
+		// Arrange
+		dir := t.TempDir()
+		path := filepath.Join(dir, ".gomut.yaml")
+		require.NoError(t, os.WriteFile(path, []byte(`kind: comparison_operator
+`), 0o600))
+
+		// Act
+		cfg, err := gomut.LoadConfig(path)
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, []string{"comparison_operator"}, []string(cfg.Kind))
 	})
 }
