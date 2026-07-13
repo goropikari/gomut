@@ -24,9 +24,9 @@ func TestResolveTarget(t *testing.T) {
 		assert.Equal(t, result.Target{Mode: result.TargetModePackage, Value: "./internal/foo"}, target)
 	})
 
-	t.Run("given the all flag, it returns all mode", func(t *testing.T) {
+	t.Run("given ./... as the target, it returns all mode", func(t *testing.T) {
 		// Arrange
-		target, err := gomut.ResolveTarget("", true, "")
+		target, err := gomut.ResolveTarget("./...", false, "")
 
 		// Assert
 		require.NoError(t, err)
@@ -40,6 +40,16 @@ func TestResolveTarget(t *testing.T) {
 		// Assert
 		require.NoError(t, err)
 		assert.Equal(t, result.Target{Mode: result.TargetModeDiff, Value: "HEAD~1..HEAD"}, target)
+	})
+
+	t.Run("given no target, it returns a helpful error", func(t *testing.T) {
+		// Arrange
+		target, err := gomut.ResolveTarget("", false, "")
+
+		// Assert
+		require.Error(t, err)
+		assert.Empty(t, target)
+		assert.Contains(t, err.Error(), "gomut test ./...")
 	})
 }
 
@@ -94,11 +104,11 @@ func TestApplyMutation(t *testing.T) {
 func TestNormalizeTestArgs(t *testing.T) {
 	t.Run("given jsonl without a value, it keeps stdout output", func(t *testing.T) {
 		// Arrange
-		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--jsonl"})
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--jsonl"})
 
 		// Assert
 		require.NoError(t, err)
-		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
+		assert.Equal(t, []string{"./internal/gomut"}, args)
 		assert.Empty(t, jsonlOutput)
 		assert.True(t, jsonlEnabled)
 		assert.Empty(t, htmlOutput)
@@ -107,11 +117,11 @@ func TestNormalizeTestArgs(t *testing.T) {
 
 	t.Run("given jsonl with a value, it captures the file path", func(t *testing.T) {
 		// Arrange
-		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--jsonl", "mutations.jsonl"})
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--jsonl", "mutations.jsonl"})
 
 		// Assert
 		require.NoError(t, err)
-		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
+		assert.Equal(t, []string{"./internal/gomut"}, args)
 		assert.JSONEq(t, `"mutations.jsonl"`, strconv.Quote(jsonlOutput))
 		assert.True(t, jsonlEnabled)
 		assert.Empty(t, htmlOutput)
@@ -120,11 +130,11 @@ func TestNormalizeTestArgs(t *testing.T) {
 
 	t.Run("given jsonl equals syntax, it captures the file path", func(t *testing.T) {
 		// Arrange
-		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--jsonl=mutations.jsonl"})
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--jsonl=mutations.jsonl"})
 
 		// Assert
 		require.NoError(t, err)
-		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
+		assert.Equal(t, []string{"./internal/gomut"}, args)
 		assert.JSONEq(t, `"mutations.jsonl"`, strconv.Quote(jsonlOutput))
 		assert.True(t, jsonlEnabled)
 		assert.Empty(t, htmlOutput)
@@ -133,11 +143,11 @@ func TestNormalizeTestArgs(t *testing.T) {
 
 	t.Run("given short jsonl syntax, it captures the file path", func(t *testing.T) {
 		// Arrange
-		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "-jsonl", "mutations.jsonl"})
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "-jsonl", "mutations.jsonl"})
 
 		// Assert
 		require.NoError(t, err)
-		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
+		assert.Equal(t, []string{"./internal/gomut"}, args)
 		assert.JSONEq(t, `"mutations.jsonl"`, strconv.Quote(jsonlOutput))
 		assert.True(t, jsonlEnabled)
 		assert.Empty(t, htmlOutput)
@@ -146,11 +156,11 @@ func TestNormalizeTestArgs(t *testing.T) {
 
 	t.Run("given html without a value, it keeps stdout output", func(t *testing.T) {
 		// Arrange
-		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--html"})
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--html"})
 
 		// Assert
 		require.NoError(t, err)
-		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
+		assert.Equal(t, []string{"./internal/gomut"}, args)
 		assert.Empty(t, jsonlOutput)
 		assert.False(t, jsonlEnabled)
 		assert.Empty(t, htmlOutput)
@@ -159,11 +169,11 @@ func TestNormalizeTestArgs(t *testing.T) {
 
 	t.Run("given html with a value, it captures the file path", func(t *testing.T) {
 		// Arrange
-		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--html", "report.html"})
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--html", "report.html"})
 
 		// Assert
 		require.NoError(t, err)
-		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
+		assert.Equal(t, []string{"./internal/gomut"}, args)
 		assert.Empty(t, jsonlOutput)
 		assert.False(t, jsonlEnabled)
 		assert.Equal(t, "report.html", htmlOutput)
@@ -172,11 +182,11 @@ func TestNormalizeTestArgs(t *testing.T) {
 
 	t.Run("given short html syntax, it captures the file path", func(t *testing.T) {
 		// Arrange
-		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "-html", "report.html"})
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "-html", "report.html"})
 
 		// Assert
 		require.NoError(t, err)
-		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
+		assert.Equal(t, []string{"./internal/gomut"}, args)
 		assert.Empty(t, jsonlOutput)
 		assert.False(t, jsonlEnabled)
 		assert.Equal(t, "report.html", htmlOutput)
@@ -185,11 +195,11 @@ func TestNormalizeTestArgs(t *testing.T) {
 
 	t.Run("given both jsonl and html outputs, it captures both file paths", func(t *testing.T) {
 		// Arrange
-		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"--package", "./internal/gomut", "--jsonl", "mutations.jsonl", "--html", "report.html"})
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--jsonl", "mutations.jsonl", "--html", "report.html"})
 
 		// Assert
 		require.NoError(t, err)
-		assert.Equal(t, []string{"--package", "./internal/gomut"}, args)
+		assert.Equal(t, []string{"./internal/gomut"}, args)
 		assert.JSONEq(t, `"mutations.jsonl"`, strconv.Quote(jsonlOutput))
 		assert.True(t, jsonlEnabled)
 		assert.Equal(t, "report.html", htmlOutput)

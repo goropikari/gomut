@@ -15,7 +15,7 @@ func TestCommandRunKindFilter(t *testing.T) {
 		root := createResultFilterFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./sample", "--kind", "comparison_operator", "--jsonl", "--progress=off"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--kind", "comparison_operator", "--jsonl", "--progress=off"})
 
 		// Assert
 		require.NoError(t, err)
@@ -37,7 +37,7 @@ func TestCommandRunKindFilter(t *testing.T) {
 		root := createResultFilterFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./sample", "--kind", "comparison_operator,return", "--kind", "nil_check", "--jsonl", "--progress=off"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--kind", "comparison_operator,return", "--kind", "nil_check", "--jsonl", "--progress=off"})
 
 		// Assert
 		require.NoError(t, err)
@@ -59,7 +59,7 @@ func TestCommandRunKindFilter(t *testing.T) {
 		root := createResultFilterFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./sample", "--kind", "comparsion_operator", "--jsonl", "--progress=off"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--kind", "comparsion_operator", "--jsonl", "--progress=off"})
 
 		// Assert
 		require.Error(t, err)
@@ -74,7 +74,7 @@ func TestCommandRunKindFilter(t *testing.T) {
 		root := createKindConfigFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./sample", "--kind", "comparison_operator", "--jsonl", "--progress=off"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--kind", "comparison_operator", "--jsonl", "--progress=off"})
 
 		// Assert
 		require.NoError(t, err)

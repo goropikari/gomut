@@ -26,10 +26,9 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 
 		command := NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
 		cmd := command.newTestCommand()
-		require.NoError(t, cmd.Flags().Set("package", "./sample"))
 
 		// Act
-		cfg, err := command.buildTestRunConfig(cmd)
+		cfg, err := command.buildTestRunConfig(cmd, "./sample")
 
 		// Assert
 		require.NoError(t, err)
@@ -44,11 +43,10 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 
 		command := NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
 		cmd := command.newTestCommand()
-		require.NoError(t, cmd.Flags().Set("package", "./sample"))
 		require.NoError(t, cmd.Flags().Set("parallel", "2"))
 
 		// Act
-		cfg, err := command.buildTestRunConfig(cmd)
+		cfg, err := command.buildTestRunConfig(cmd, "./sample")
 
 		// Assert
 		require.NoError(t, err)
@@ -62,10 +60,9 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 
 		command := NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
 		cmd := command.newTestCommand()
-		require.NoError(t, cmd.Flags().Set("package", "./sample"))
 
 		// Act
-		cfg, err := command.buildTestRunConfig(cmd)
+		cfg, err := command.buildTestRunConfig(cmd, "./sample")
 
 		// Assert
 		require.NoError(t, err)
@@ -79,11 +76,10 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 
 		command := NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
 		cmd := command.newTestCommand()
-		require.NoError(t, cmd.Flags().Set("package", "./sample"))
 		require.NoError(t, cmd.Flags().Set("verbose", "true"))
 
 		// Act
-		cfg, err := command.buildTestRunConfig(cmd)
+		cfg, err := command.buildTestRunConfig(cmd, "./sample")
 
 		// Assert
 		require.NoError(t, err)

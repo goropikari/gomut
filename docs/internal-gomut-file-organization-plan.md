@@ -297,7 +297,7 @@ go test ./...
 必要に応じて CLI の確認:
 
 ```sh
-go run ./cmd/gomut test --package ./sample --jsonl
+go run ./cmd/gomut test ./sample --jsonl
 ```
 
 ## 完了条件

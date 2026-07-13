@@ -13,7 +13,7 @@ For the Japanese version, see [README.ja.md](README.ja.md).
 ## Features
 
 - Run mutation testing for a single Go package
-- Run against all Go packages in a repository with `--all`
+- Run against all Go packages in a repository with `./...`
 - Scan only the files touched by a git diff with `--diff`
 - Run mutation testing in an isolated temporary copy of the repository
 - Run mutations in parallel with `--parallel`
@@ -51,14 +51,14 @@ Use `./sample` for one package, or `./sample/...` to include all packages under 
 For example, `./sample/...` picks up packages such as `./sample/alpha` and `./sample/beta`.
 
 ```bash
-gomut test --package ./sample
-gomut test --package ./sample/...
+gomut test ./sample
+gomut test ./sample/...
 ```
 
 ### All packages
 
 ```bash
-gomut test --all
+gomut test ./...
 ```
 
 ### Diff mode
@@ -83,20 +83,20 @@ gomut test --diff main
 ### JSON Lines output
 
 ```bash
-gomut test --package ./sample --jsonl
-gomut test --package ./sample --jsonl mutations.jsonl
-gomut test --package ./sample --type lived --jsonl
-gomut test --package ./sample --kind comparison_operator --jsonl
-gomut test --package ./sample --kind comparison_operator,return --kind nil_check --jsonl
-gomut test --package ./sample --jsonl mutations.jsonl --html report.html
+gomut test ./sample --jsonl
+gomut test ./sample --jsonl mutations.jsonl
+gomut test ./sample --type lived --jsonl
+gomut test ./sample --kind comparison_operator --jsonl
+gomut test ./sample --kind comparison_operator,return --kind nil_check --jsonl
+gomut test ./sample --jsonl mutations.jsonl --html report.html
 ```
 
 ### HTML output
 
 ```bash
-gomut test --package ./sample --html
-gomut test --package ./sample --html report.html
-gomut test --package ./sample --jsonl mutations.jsonl --html report.html
+gomut test ./sample --html
+gomut test ./sample --html report.html
+gomut test ./sample --jsonl mutations.jsonl --html report.html
 ```
 
 ### Timeout
@@ -104,7 +104,7 @@ gomut test --package ./sample --jsonl mutations.jsonl --html report.html
 Each mutation run uses a per-mutation timeout. The default is `10s`.
 
 ```bash
-gomut test --package ./sample --timeout 30s
+gomut test ./sample --timeout 30s
 ```
 
 You can also set the default in `.gomut.yaml`:
@@ -113,14 +113,14 @@ You can also set the default in `.gomut.yaml`:
 timeout: 30s
 ```
 
-CLI flags override config file values.
+CLI flags and positional targets override config file values.
 
 ### Progress
 
 Progress reporting is controlled with `--progress=auto|on|off`.
 
 ```bash
-gomut test --package ./sample --jsonl mutations.jsonl --progress=on
+gomut test ./sample --jsonl mutations.jsonl --progress=on
 ```
 
 `auto` is the default. It shows progress in interactive terminals and stays quiet in non-TTY and CI runs.
@@ -291,6 +291,6 @@ make lint
 When needed, verify behavior with commands such as:
 
 ```bash
-go run ./cmd/gomut test --package ./sample --jsonl
-./gomut test --all
+go run ./cmd/gomut test ./sample --jsonl
+./gomut test ./...
 ```
