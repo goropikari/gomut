@@ -46,8 +46,12 @@ That installs `codex`, `dprint`, and `gitleaks`.
 
 ### Package mode
 
+Use `./sample` for one package, or `./sample/...` to include all packages under `sample/`.
+For example, `./sample/...` picks up packages such as `./sample/alpha` and `./sample/beta`.
+
 ```bash
 gomut test --package ./sample
+gomut test --package ./sample/...
 ```
 
 ### All packages
@@ -134,7 +138,7 @@ CLI flags override config file values.
 ```yaml
 target:
   mode: package
-  value: ./sample
+  value: ./sample/...
 timeout: 30s
 progress: on
 parallel: 4

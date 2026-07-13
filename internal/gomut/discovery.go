@@ -120,7 +120,12 @@ func discoverFileCandidates(root, pkg, file string, target result.Target, covera
 func resolvePackages(ctx context.Context, originalRoot, root string, target result.Target) ([]string, error) {
 	switch target.Mode {
 	case result.TargetModePackage:
-		return []string{target.Value}, nil
+		packages, err := listPackages(ctx, root, target.Value)
+		if err != nil {
+			return nil, fmt.Errorf("list packages for target %s: %w", target.Value, err)
+		}
+
+		return packages, nil
 	case result.TargetModeAll:
 		packages, err := listPackages(ctx, root, "./...")
 		if err != nil {
@@ -187,9 +192,9 @@ func listPackages(ctx context.Context, root, pattern string) ([]string, error) {
 	cmd.Dir = root
 	cmd.Env = goCommandEnv()
 
-	out, err := cmd.Output()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("go list %s: %w: %s", pattern, err, strings.TrimSpace(string(out)))
 	}
 
 	lines := strings.Fields(strings.TrimSpace(string(out)))

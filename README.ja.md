@@ -46,8 +46,12 @@ make install-dev-tools
 
 ### パッケージ単位
 
+`./sample` は 1 パッケージ、`./sample/...` は `sample/` 配下の全パッケージを対象にします。
+たとえば `./sample/...` は `./sample/alpha` や `./sample/beta` のようなパッケージを拾います。
+
 ```bash
 gomut test --package ./sample
+gomut test --package ./sample/...
 ```
 
 ### 全パッケージ
@@ -134,7 +138,7 @@ CLI フラグは config ファイルの値より優先されます。
 ```yaml
 target:
   mode: package
-  value: ./sample
+  value: ./sample/...
 timeout: 30s
 progress: on
 parallel: 4
