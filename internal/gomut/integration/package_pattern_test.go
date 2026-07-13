@@ -15,7 +15,7 @@ func TestCommandRunPackagePattern(t *testing.T) {
 		root := createPackagePatternFixture(t, false)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./sample/...", "--jsonl", "--progress=off"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample/...", "--jsonl", "--progress=off"})
 
 		// Assert
 		require.NoError(t, err)
@@ -77,7 +77,7 @@ func TestCommandRunPackagePattern(t *testing.T) {
 		root := createPackagePatternFixture(t, false)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./missing/...", "--jsonl", "--progress=off"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./missing/...", "--jsonl", "--progress=off"})
 
 		// Assert
 		require.Error(t, err)

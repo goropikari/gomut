@@ -54,7 +54,7 @@ func TestCommandRunConfig(t *testing.T) {
 		jsonlPath := filepath.Join(root, "override.jsonl")
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./alt", "--jsonl", jsonlPath})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./alt", "--jsonl", jsonlPath})
 
 		// Assert
 		require.NoError(t, err)
@@ -72,7 +72,7 @@ func TestCommandRunConfig(t *testing.T) {
 		jsonlPath := filepath.Join(root, "progress-override.jsonl")
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./sample", "--jsonl", jsonlPath, "--progress=off"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--jsonl", jsonlPath, "--progress=off"})
 
 		// Assert
 		require.NoError(t, err)
@@ -90,12 +90,26 @@ func TestCommandRunConfig(t *testing.T) {
 		root := createNoConfigFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--package", "./sample", "--jsonl"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--jsonl"})
 
 		// Assert
 		require.NoError(t, err)
 		assert.NotEmpty(t, stdout)
 		assert.Contains(t, stderr, "Mutation summary")
+	})
+
+	t.Run("given no target on the CLI and no config target, it fails with a usage error", func(t *testing.T) {
+		// Arrange
+		root := createNoConfigFixture(t)
+
+		// Act
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--jsonl"})
+
+		// Assert
+		require.Error(t, err)
+		assert.Empty(t, stdout)
+		assert.Empty(t, stderr)
+		assert.Contains(t, err.Error(), "gomut test ./...")
 	})
 
 	t.Run("given a malformed config file, it fails with a clear error", func(t *testing.T) {

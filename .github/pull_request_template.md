@@ -12,7 +12,7 @@
 - [ ] `go test ./...`
 - [ ] `make fmt`
 - [ ] `make lint`
-- [ ] 必要に応じて `go run ./cmd/gomut test --package ./sample --jsonl`
+- [ ] 必要に応じて `go run ./cmd/gomut test ./sample --jsonl`
 
 ## 影響範囲
 

@@ -2,7 +2,6 @@ package gomut
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -59,7 +58,7 @@ func (c *Command) newRootCommand() *cobra.Command {
 
 func (c *Command) newTestCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:           "test",
+		Use:           "test <target>",
 		Short:         "Run mutation testing",
 		SilenceErrors: true,
 		SilenceUsage:  true,
@@ -69,8 +68,6 @@ func (c *Command) newTestCommand() *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-	flags.String("package", "", "package import path or pattern")
-	flags.Bool("all", false, "test all packages")
 	flags.String("diff", "", "git diff range or branch name, for example HEAD~1..HEAD or main")
 	flags.StringSlice("type", nil, "mutation result types to output")
 	flags.StringSlice("kind", nil, "mutation kinds to run")
@@ -88,11 +85,7 @@ func (c *Command) newTestCommand() *cobra.Command {
 }
 
 func (c *Command) runTest(cmd *cobra.Command, args []string) error {
-	if len(args) > 0 {
-		return fmt.Errorf("unexpected arguments: %s", strings.Join(args, " "))
-	}
-
-	cfg, err := c.buildTestRunConfig(cmd)
+	cfg, err := c.buildTestRunConfig(cmd, args...)
 	if err != nil {
 		return err
 	}

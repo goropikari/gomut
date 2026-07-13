@@ -4,8 +4,8 @@
 
 `gomut` は Go 向けの mutation testing CLI です。エージェント作業では、主に次を前提に扱います。
 
-- `--package` で単一パッケージを対象化できる
-- `--all` でリポジトリ内の Go パッケージを対象化できる
+- `gomut test ./sample` のような位置引数で単一パッケージを対象化できる
+- `gomut test ./...` でリポジトリ内の Go パッケージを対象化できる
 - `--diff` で git 差分に含まれる対象を走査できる
 - mutation ごとに `go test` を実行し、結果を分類する
 - 結果は JSON Lines で出力できる
@@ -59,7 +59,7 @@
 - format: `make fmt`
 - lint: `make lint`
 - コードを編集したら `make fmt` と `make lint` でエラーが出ないことも確認する
-- 変更後は、必要なら `go run ./cmd/gomut test --package ./sample --jsonl` や `./gomut test --all` で挙動確認する
+- 変更後は、必要なら `go run ./cmd/gomut test ./sample --jsonl` や `./gomut test ./...` で挙動確認する
 
 ## Pull Requests
 

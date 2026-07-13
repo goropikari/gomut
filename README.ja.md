@@ -13,7 +13,7 @@
 ## 機能
 
 - 単一の Go パッケージに対して mutation testing を実行
-- `--all` でリポジトリ内の全 Go パッケージを対象化
+- `./...` でリポジトリ内の全 Go パッケージを対象化
 - `--diff` で git 差分に含まれるファイルだけを走査
 - 一時的なコピー上で安全に mutation testing を実行
 - `--parallel` で mutation を並列実行
@@ -51,14 +51,14 @@ make install-dev-tools
 たとえば `./sample/...` は `./sample/alpha` や `./sample/beta` のようなパッケージを拾います。
 
 ```bash
-gomut test --package ./sample
-gomut test --package ./sample/...
+gomut test ./sample
+gomut test ./sample/...
 ```
 
 ### 全パッケージ
 
 ```bash
-gomut test --all
+gomut test ./...
 ```
 
 ### diff モード
@@ -83,20 +83,20 @@ gomut test --diff main
 ### JSON Lines 出力
 
 ```bash
-gomut test --package ./internal/gomut --jsonl
-gomut test --package ./internal/gomut --jsonl mutations.jsonl
-gomut test --package ./internal/gomut --type lived --jsonl
-gomut test --package ./internal/gomut --kind comparison_operator --jsonl
-gomut test --package ./internal/gomut --kind comparison_operator,return --kind nil_check --jsonl
-gomut test --package ./internal/gomut --jsonl mutations.jsonl --html report.html
+gomut test ./internal/gomut --jsonl
+gomut test ./internal/gomut --jsonl mutations.jsonl
+gomut test ./internal/gomut --type lived --jsonl
+gomut test ./internal/gomut --kind comparison_operator --jsonl
+gomut test ./internal/gomut --kind comparison_operator,return --kind nil_check --jsonl
+gomut test ./internal/gomut --jsonl mutations.jsonl --html report.html
 ```
 
 ### HTML 出力
 
 ```bash
-gomut test --package ./internal/gomut --html
-gomut test --package ./internal/gomut --html report.html
-gomut test --package ./internal/gomut --jsonl mutations.jsonl --html report.html
+gomut test ./internal/gomut --html
+gomut test ./internal/gomut --html report.html
+gomut test ./internal/gomut --jsonl mutations.jsonl --html report.html
 ```
 
 ### タイムアウト
@@ -104,7 +104,7 @@ gomut test --package ./internal/gomut --jsonl mutations.jsonl --html report.html
 各 mutation の実行には個別のタイムアウトがあり、デフォルトは `10s` です。
 
 ```bash
-gomut test --package ./sample --timeout 30s
+gomut test ./sample --timeout 30s
 ```
 
 `.gomut.yaml` にも設定できます。
@@ -113,14 +113,14 @@ gomut test --package ./sample --timeout 30s
 timeout: 30s
 ```
 
-CLI フラグは config ファイルの値より優先されます。
+CLI のフラグと位置引数は config ファイルの値より優先されます。
 
 ### progress
 
 `--progress=auto|on|off` で mutation の進捗表示を `stderr` に出すか制御できます。
 
 ```bash
-gomut test --package ./sample --jsonl mutations.jsonl --progress=on
+gomut test ./sample --jsonl mutations.jsonl --progress=on
 ```
 
 `auto` が既定値です。対話的な端末では進捗を表示し、非 TTY や CI では静かに動作します。
@@ -291,6 +291,6 @@ make lint
 必要に応じて、次のコマンドで挙動確認できます。
 
 ```bash
-go run ./cmd/gomut test --package ./sample --jsonl
-./gomut test --all
+go run ./cmd/gomut test ./sample --jsonl
+./gomut test ./...
 ```

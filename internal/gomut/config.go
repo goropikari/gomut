@@ -90,8 +90,7 @@ type RunConfig struct {
 }
 
 type testRunInputs struct {
-	pkgTarget       string
-	allTarget       bool
+	targetArg       string
 	diffRange       string
 	resultTypes     []string
 	timeout         time.Duration
@@ -162,8 +161,8 @@ func (c *Command) loadTestConfig(cmd *cobra.Command) (Config, error) {
 	return LoadConfig(defaultPath)
 }
 
-func (c *Command) buildTestRunConfig(cmd *cobra.Command) (RunConfig, error) {
-	inputs, err := c.loadTestRunInputs(cmd)
+func (c *Command) buildTestRunConfig(cmd *cobra.Command, args ...string) (RunConfig, error) {
+	inputs, err := c.loadTestRunInputs(cmd, args)
 	if err != nil {
 		return RunConfig{}, err
 	}
@@ -182,7 +181,7 @@ func (c *Command) buildTestRunConfig(cmd *cobra.Command) (RunConfig, error) {
 		return RunConfig{}, err
 	}
 
-	target, err := ResolveTarget(inputs.pkgTarget, inputs.allTarget, inputs.diffRange)
+	target, err := ResolveTarget(inputs.targetArg, false, inputs.diffRange)
 	if err != nil {
 		return RunConfig{}, err
 	}
@@ -208,25 +207,31 @@ func (c *Command) buildTestRunConfig(cmd *cobra.Command) (RunConfig, error) {
 	}, nil
 }
 
-func (c *Command) loadTestRunInputs(cmd *cobra.Command) (testRunInputs, error) {
+func (c *Command) loadTestRunInputs(cmd *cobra.Command, args []string) (testRunInputs, error) {
 	config, err := c.loadTestConfig(cmd)
 	if err != nil {
 		return testRunInputs{}, err
 	}
 
+	if len(args) > 1 {
+		return testRunInputs{}, fmt.Errorf("unexpected arguments: %s", strings.Join(args[1:], " "))
+	}
+
 	timeout, _ := cmd.Flags().GetDuration("timeout")
 	parallel, _ := cmd.Flags().GetInt("parallel")
-	pkgTarget, _ := cmd.Flags().GetString("package")
-	allTarget, _ := cmd.Flags().GetBool("all")
 	diffRange, _ := cmd.Flags().GetString("diff")
 	resultTypes, _ := cmd.Flags().GetStringSlice("type")
 	progressMode, _ := cmd.Flags().GetString("progress")
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	kind, _ := cmd.Flags().GetStringSlice("kind")
 
+	targetArg := ""
+	if len(args) == 1 {
+		targetArg = args[0]
+	}
+
 	return testRunInputs{
-		pkgTarget:       pkgTarget,
-		allTarget:       allTarget,
+		targetArg:       targetArg,
 		diffRange:       diffRange,
 		resultTypes:     append([]string(nil), resultTypes...),
 		timeout:         timeout,
@@ -241,7 +246,7 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command) (testRunInputs, error) {
 		jsonlEnabled:    c.jsonlEnabled,
 		htmlOutput:      c.htmlOutput,
 		htmlEnabled:     c.htmlEnabled,
-		targetChanged:   cmd.Flags().Changed("package") || cmd.Flags().Changed("all") || cmd.Flags().Changed("diff"),
+		targetChanged:   len(args) > 0 || cmd.Flags().Changed("diff"),
 		typeChanged:     cmd.Flags().Changed("type"),
 		timeoutChanged:  cmd.Flags().Changed("timeout"),
 		config:          config,
@@ -343,9 +348,9 @@ func applyConfigTargetMode(inputs *testRunInputs, mode result.TargetMode, value 
 			return errors.New("config target.value is required when target.mode is package")
 		}
 
-		inputs.pkgTarget = *value
+		inputs.targetArg = *value
 	case result.TargetModeAll:
-		inputs.allTarget = true
+		inputs.targetArg = "./..."
 	case result.TargetModeDiff:
 		inputs.diffRange = configDiffRange(value)
 	default:
@@ -376,38 +381,30 @@ func parseProgressMode(value string) (ProgressMode, error) {
 	}
 }
 
-func ResolveTarget(pkg string, all bool, diffRange string) (result.Target, error) {
-	selected := 0
-	if pkg != "" {
-		selected++
+func ResolveTarget(targetArg string, all bool, diffRange string) (result.Target, error) {
+	if all {
+		if targetArg != "" {
+			return result.Target{}, errors.New("use either a positional target or --diff, not both")
+		}
+
+		targetArg = "./..."
 	}
 
-	if all {
-		selected++
+	if targetArg != "" && diffRange != "" {
+		return result.Target{}, errors.New("use either a positional target or --diff, not both")
 	}
 
 	if diffRange != "" {
-		selected++
-	}
-
-	if selected == 0 {
-		return result.Target{}, errors.New("select one target mode with --package, --all, or --diff")
-	}
-
-	if selected > 1 {
-		return result.Target{}, errors.New("only one of --package, --all, or --diff can be set")
-	}
-
-	switch {
-	case pkg != "":
-		return result.Target{Mode: result.TargetModePackage, Value: pkg}, nil
-	case all:
-		return result.Target{Mode: result.TargetModeAll, Value: "./..."}, nil
-	default:
-		if diffRange == "" {
-			diffRange = "HEAD"
-		}
-
 		return result.Target{Mode: result.TargetModeDiff, Value: diffRange}, nil
 	}
+
+	if targetArg == "" {
+		return result.Target{}, errors.New("target is required. use `gomut test ./...` or `gomut test --diff <range>`")
+	}
+
+	if targetArg == "./..." {
+		return result.Target{Mode: result.TargetModeAll, Value: "./..."}, nil
+	}
+
+	return result.Target{Mode: result.TargetModePackage, Value: targetArg}, nil
 }
