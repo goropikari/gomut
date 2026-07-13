@@ -235,14 +235,14 @@ exclude:
 | Kind                    | Example                                                                        |
 | ----------------------- | ------------------------------------------------------------------------------ |
 | `comparison_operator`   | `==` -> `!=`, `!=` -> `==`, `<` -> `<=`, `>` -> `>=`, `<=` -> `<`, `>=` -> `>` |
-| `logical_operator`      | `&&` -> `&#124;&#124;`, `&#124;&#124;` -> `&&`                                 |
+| `logical_operator`      | `&&` -> \|\|, \|\| -> `&&`                                                    |
 | `guard_clause`          | Simple guard-clause return replacement                                         |
 | `arithmetic_operator`   | `+` -> `-`, `-` -> `+`, `*` -> `/`, `/` -> `*`, `%` -> `*`                     |
-| `bitwise_operator`      | `&` -> `&#124;`, `&#124;` -> `&`, `^` -> `&`, `&^` -> `&#124;`                 |
+| `bitwise_operator`      | `&` -> \|, \| -> `&`, `^` -> `&`, `&^` -> \|                                  |
 | `shift_operator`        | `<<` -> `>>`, `>>` -> `<<`                                                     |
 | `assignment_arithmetic` | `+=` -> `-=`, `-=` -> `+=`, `*=` -> `/=`, `/=` -> `*=`, `%=` -> `*=`           |
 | `assignment_shift`      | `<<=` -> `>>=`, `>>=` -> `<<=`                                                 |
-| `assignment_bitwise`    | `&=` -> `&#124;=`, `&#124;=` -> `&=`, `^=` -> `&=`, `&^=` -> `&#124;=`         |
+| `assignment_bitwise`    | `&=` -> \|=, \|= -> `&=`, `^=` -> `&=`, `&^=` -> \|=                          |
 | `inc_dec`               | `++` -> `--`, `--` -> `++`                                                     |
 | `control_flow`          | `switch x` condition inversion                                                 |
 | `return`                | `return true` -> `return false`, `return false` -> `return true`               |
