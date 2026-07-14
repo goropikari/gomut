@@ -53,6 +53,16 @@ func Add(a, b int) int {
 	return a + b
 }
 
+func CountUpTo(limit int) int {
+	total := 0
+
+	for i := 0; i < limit; i++ {
+		total += i
+	}
+
+	return total
+}
+
 func SetMask(mask uint8) uint8 {
 	mask |= 1
 	return mask
@@ -150,18 +160,7 @@ func AlwaysDisabled() bool {
 		require.NoError(t, err)
 		require.NotEmpty(t, candidates)
 
-		kinds := map[result.MutationKind]bool{}
-
-		var controlFlowCandidate *result.Candidate
-
-		for i := range candidates {
-			candidate := candidates[i]
-
-			kinds[candidate.Kind] = true
-			if candidate.Kind == result.MutationKindControlFlow && candidate.Original == "ready" {
-				controlFlowCandidate = &candidates[i]
-			}
-		}
+		kinds := collectMutationKinds(candidates)
 
 		assert.True(t, kinds[result.MutationKindComparisonOperator], "expected comparison operator mutation to remain available")
 		assert.True(t, kinds[result.MutationKindLogicalOperator], "expected logical operator mutation to remain available")
@@ -186,12 +185,21 @@ func AlwaysDisabled() bool {
 		assert.True(t, kinds[result.MutationKindSwitchCondition], "expected switch condition mutation to be discovered")
 		assert.True(t, kinds[result.MutationKindStringLiteral], "expected string literal mutation to be discovered")
 
+		controlFlowCandidate := findCandidateByKindAndOriginal(candidates, result.MutationKindControlFlow, "ready")
 		require.NotNil(t, controlFlowCandidate)
 		assert.Contains(t, controlFlowCandidate.File, filepath.ToSlash(filepath.Join("sample", "sample.go")))
 		assert.Equal(t, result.MutationKindControlFlow, controlFlowCandidate.Kind)
 		assert.Equal(t, "ready", controlFlowCandidate.Original)
 		assert.Equal(t, "!ready", controlFlowCandidate.Replacement)
 		assert.Positive(t, controlFlowCandidate.Line)
+
+		guardClauseCandidate := findCandidateByKindAndOriginal(candidates, result.MutationKindGuardClause, "err")
+		require.NotNil(t, guardClauseCandidate)
+		assert.Contains(t, guardClauseCandidate.File, filepath.ToSlash(filepath.Join("sample", "sample.go")))
+		assert.Equal(t, result.MutationKindGuardClause, guardClauseCandidate.Kind)
+		assert.Equal(t, "err", guardClauseCandidate.Original)
+		assert.Equal(t, "nil", guardClauseCandidate.Replacement)
+		assert.Positive(t, guardClauseCandidate.Line)
 	})
 
 	t.Run("given import declarations and normal string literals, it excludes import paths from string literal mutations", func(t *testing.T) {
@@ -302,4 +310,59 @@ func BreakInsideSwitch(values []int) int {
 			assert.Positive(t, candidate.Line)
 		}
 	})
+}
+
+func TestDiscoverCandidatesForCondition(t *testing.T) {
+	t.Run("given a for loop with a condition, it discovers the control flow mutation", func(t *testing.T) {
+		// Arrange
+		root := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module example.com/mut\n\ngo 1.26\n"), 0o600))
+		require.NoError(t, os.MkdirAll(filepath.Join(root, "sample"), 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(root, "sample", "sample.go"), []byte(`package sample
+
+func CountUpTo(limit int) int {
+	total := 0
+
+	for i := 0; i < limit; i++ {
+		total += i
+	}
+
+	return total
+}
+`), 0o600))
+
+		// Act
+		candidates, err := gomut.DiscoverCandidates(root, []string{"./sample"}, result.Target{Mode: result.TargetModePackage, Value: "./sample"}, map[string]result.FileCoverage{})
+
+		// Assert
+		require.NoError(t, err)
+
+		candidate := findCandidateByKindAndOriginal(candidates, result.MutationKindControlFlow, "i < limit")
+		require.NotNil(t, candidate)
+		assert.Contains(t, candidate.File, filepath.ToSlash(filepath.Join("sample", "sample.go")))
+		assert.Equal(t, result.MutationKindControlFlow, candidate.Kind)
+		assert.Equal(t, "i < limit", candidate.Original)
+		assert.Equal(t, "!(i < limit)", candidate.Replacement)
+		assert.Positive(t, candidate.Line)
+	})
+}
+
+func collectMutationKinds(candidates []result.Candidate) map[result.MutationKind]bool {
+	kinds := make(map[result.MutationKind]bool, len(candidates))
+	for _, candidate := range candidates {
+		kinds[candidate.Kind] = true
+	}
+
+	return kinds
+}
+
+func findCandidateByKindAndOriginal(candidates []result.Candidate, kind result.MutationKind, original string) *result.Candidate {
+	for i := range candidates {
+		candidate := &candidates[i]
+		if candidate.Kind == kind && candidate.Original == original {
+			return candidate
+		}
+	}
+
+	return nil
 }

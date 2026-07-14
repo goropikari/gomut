@@ -244,8 +244,8 @@ exclude:
 | `assignment_shift`      | `<<=` -> `>>=`、`>>=` -> `<<=`                                                 |
 | `assignment_bitwise`    | `&=` -> \|=、\|= -> `&=`、`^=` -> `&=`、`&^=` -> \|=                           |
 | `inc_dec`               | `++` -> `--`、`--` -> `++`                                                     |
-| `control_flow`          | `switch x` の条件反転                                                          |
-| `loop_control`          | ループ内の `break` -> `continue`、`continue` -> `break`                        |
+| `control_flow`          | `if` / `for` / `switch` の条件反転                                             |
+| `loop_control`          | `for` / `range` ループ内の `break` -> `continue`、`continue` -> `break`        |
 | `return`                | `return true` -> `return false`、`return false` -> `return true`               |
 | `nil_check`             | `== nil` -> `!= nil`、`!= nil` -> `== nil`                                     |
 | `boolean_literal`       | `true` -> `false`、`false` -> `true`                                           |
