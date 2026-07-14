@@ -116,6 +116,25 @@ func AdvanceCount(count int) int {
 	return count
 }
 
+// SumUntilNegative adds positive values and stops at the first negative value.
+func SumUntilNegative(values []int) int {
+	total := 0
+
+	for _, value := range values {
+		if value < 0 {
+			break
+		}
+
+		if value == 0 {
+			continue
+		}
+
+		total += value
+	}
+
+	return total
+}
+
 // NeedsReview reports whether the item should be manually reviewed.
 // It is intentionally left without a sample test so gomut can report NOT COVERED.
 func NeedsReview(reviewed bool, score int) bool {

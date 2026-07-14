@@ -239,6 +239,24 @@ func TestAdvanceCount(t *testing.T) {
 	})
 }
 
+func TestSumUntilNegative(t *testing.T) {
+	t.Run("given positive values with a zero and a later negative value, it skips zeros and stops at the first negative", func(t *testing.T) {
+		// Arrange
+		got := sample.SumUntilNegative([]int{1, 0, 2, -1, 5})
+
+		// Assert
+		assert.Equal(t, 3, got)
+	})
+
+	t.Run("given only positive values, it sums them all", func(t *testing.T) {
+		// Arrange
+		got := sample.SumUntilNegative([]int{2, 3, 4})
+
+		// Assert
+		assert.Equal(t, 9, got)
+	})
+}
+
 func TestValidateQuantity(t *testing.T) {
 	t.Run("given a negative quantity, it returns an error", func(t *testing.T) {
 		// Arrange

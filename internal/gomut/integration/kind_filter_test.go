@@ -32,6 +32,28 @@ func TestCommandRunKindFilter(t *testing.T) {
 		assert.Equal(t, len(records), last.Summary.Total)
 	})
 
+	t.Run("given the loop control kind, it writes only loop control records", func(t *testing.T) {
+		// Arrange
+		root := createResultFilterFixture(t)
+
+		// Act
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--kind", "loop_control", "--jsonl", "--progress=off"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Contains(t, stderr, "Mutation summary")
+
+		records := decodeJSONLRecords(t, stdout)
+		require.NotEmpty(t, records)
+
+		for _, record := range records {
+			assert.Equal(t, "loop_control", string(record.Mutation.Kind))
+		}
+
+		last := records[len(records)-1]
+		assert.Equal(t, len(records), last.Summary.Total)
+	})
+
 	t.Run("given comma-separated and repeated mutation kinds, it writes only matching records", func(t *testing.T) {
 		// Arrange
 		root := createResultFilterFixture(t)

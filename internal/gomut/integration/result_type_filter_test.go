@@ -141,6 +141,24 @@ func Add(a, b int) int {
 	return a + b
 }
 
+func SumPositive(values []int) int {
+	total := 0
+
+	for _, value := range values {
+		if value < 0 {
+			break
+		}
+
+		if value == 0 {
+			continue
+		}
+
+		total += value
+	}
+
+	return total
+}
+
 func Unused() bool {
 	return true
 }
@@ -163,6 +181,12 @@ func TestIsAtLeast(t *testing.T) {
 func TestAdd(t *testing.T) {
 	if got := sample.Add(1, 2); got != 3 {
 		t.Fatalf("expected sum to be 3, got %d", got)
+	}
+}
+
+func TestSumPositive(t *testing.T) {
+	if got := sample.SumPositive([]int{1, 0, 2, -1, 5}); got != 3 {
+		t.Fatalf("expected filtered sum to be 3, got %d", got)
 	}
 }
 `), 0o600))

@@ -90,6 +90,7 @@
             "assignment_arithmetic",
             "assignment_shift",
             "control_flow",
+            "loop_control",
             "assignment_bitwise",
             "inc_dec",
             "return",

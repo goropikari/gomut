@@ -20,6 +20,7 @@ const (
 	MutationKindAssignmentArithmetic MutationKind = "assignment_arithmetic"
 	MutationKindAssignmentShift      MutationKind = "assignment_shift"
 	MutationKindControlFlow          MutationKind = "control_flow"
+	MutationKindLoopControl          MutationKind = "loop_control"
 	MutationKindAssignmentBitwise    MutationKind = "assignment_bitwise"
 	MutationKindIncDec               MutationKind = "inc_dec"
 	MutationKindReturn               MutationKind = "return"

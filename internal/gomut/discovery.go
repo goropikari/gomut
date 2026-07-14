@@ -99,8 +99,20 @@ func discoverFileCandidates(root, pkg, file string, target result.Target, covera
 		notices    []ExclusionNotice
 	)
 
+	var ancestors []ast.Node
+
 	ast.Inspect(astFile, func(n ast.Node) bool {
-		if candidate, ok := mutationCandidateFromNode(root, fset, src, astFile, file, pkg, n, target, covered); ok {
+		if n == nil {
+			if len(ancestors) > 0 {
+				ancestors = ancestors[:len(ancestors)-1]
+			}
+
+			return false
+		}
+
+		ancestors = append(ancestors, n)
+
+		if candidate, ok := mutationCandidateFromNode(root, fset, src, astFile, file, pkg, n, ancestors[:len(ancestors)-1], target, covered); ok {
 			if !kindFilter.Matches(candidate.Kind) {
 				return true
 			}

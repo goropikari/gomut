@@ -50,6 +50,17 @@ func TestParseMutationKindFilter(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, filter.Matches(result.MutationKindComparisonOperator))
 		assert.True(t, filter.Matches(result.MutationKindStringLiteral))
+		assert.True(t, filter.Matches(result.MutationKindLoopControl))
+	})
+
+	t.Run("given loop control, it allows the loop_control kind", func(t *testing.T) {
+		// Arrange
+		filter, err := result.ParseMutationKindFilter([]string{"loop_control"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.True(t, filter.Matches(result.MutationKindLoopControl))
+		assert.False(t, filter.Matches(result.MutationKindComparisonOperator))
 	})
 
 	t.Run("given all kinds, it exposes the supported kind list", func(t *testing.T) {
@@ -61,5 +72,6 @@ func TestParseMutationKindFilter(t *testing.T) {
 		assert.Contains(t, kinds, result.MutationKindComparisonOperator)
 		assert.Contains(t, kinds, result.MutationKindReturn)
 		assert.Contains(t, kinds, result.MutationKindStringLiteral)
+		assert.Contains(t, kinds, result.MutationKindLoopControl)
 	})
 }
