@@ -1,6 +1,12 @@
 target:
   mode: package
   value: ./sample
+kind:
+  mode: standard
+  enable:
+    - bitwise_operator
+  disable:
+    - return
 progress: on
 jsonl: mutations.jsonl
 html: report.html

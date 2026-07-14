@@ -181,6 +181,14 @@ func IsAtLeast(age int) bool {
 func Double(value int) int {
 	return value + value
 }
+
+func KeepCommonBits(mask, flag uint8) uint8 {
+	return mask & flag
+}
+
+func Greeting() string {
+	return "hello"
+}
 `), 0o600))
 	require.NoError(t, os.WriteFile(filepath.Join(root, pkg, pkg+"_test.go"), []byte(`package `+pkg+`
 
@@ -195,6 +203,18 @@ func TestIsAtLeast(t *testing.T) {
 func TestDouble(t *testing.T) {
 	if got := Double(2); got != 4 {
 		t.Fatalf("expected double to be 4, got %d", got)
+	}
+}
+
+func TestKeepCommonBits(t *testing.T) {
+	if got := KeepCommonBits(0b1101, 0b1011); got != 0b1001 {
+		t.Fatalf("expected common bits to be kept, got %08b", got)
+	}
+}
+
+func TestGreeting(t *testing.T) {
+	if got := Greeting(); got != "hello" {
+		t.Fatalf("expected greeting to be hello, got %q", got)
 	}
 }
 `), 0o600))

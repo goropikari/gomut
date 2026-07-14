@@ -2,6 +2,7 @@ package gomut
 
 import (
 	"context"
+	"gomut/internal/gomut/result"
 	"io"
 	"strings"
 	"time"
@@ -70,7 +71,9 @@ func (c *Command) newTestCommand() *cobra.Command {
 	flags := cmd.Flags()
 	flags.String("diff", "", "git diff range or branch name, for example HEAD~1..HEAD or main")
 	flags.StringSlice("type", nil, "mutation result types to output")
-	flags.StringSlice("kind", nil, "mutation kinds to run")
+	flags.String("mode", string(result.MutationKindModeStandard), "mutation kind mode: standard or all")
+	flags.StringSlice("enable", nil, "additional mutation kinds to enable")
+	flags.StringSlice("disable", nil, "mutation kinds to disable")
 	flags.Duration("timeout", 10*time.Second, "timeout per mutation")
 	flags.Int("parallel", 0, "number of concurrent mutation workers")
 	flags.String("config", "", "config file path")
