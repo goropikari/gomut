@@ -116,6 +116,17 @@ func AdvanceCount(count int) int {
 	return count
 }
 
+// CountUpTo returns the sum from zero up to but not including limit.
+func CountUpTo(limit int) int {
+	total := 0
+
+	for i := 0; i < limit; i++ {
+		total += i
+	}
+
+	return total
+}
+
 // SumUntilNegative adds positive values and stops at the first negative value.
 func SumUntilNegative(values []int) int {
 	total := 0

@@ -124,6 +124,9 @@ func mutationCandidateFromNode(root string, fset *token.FileSet, src []byte, ast
 			return mutationFromIfNode(root, fset, src, file, pkg, node, target, coverage)
 		},
 		func() (result.Candidate, bool) {
+			return mutationFromForNode(root, fset, src, file, pkg, node, target, coverage)
+		},
+		func() (result.Candidate, bool) {
 			return mutationFromSwitchNode(root, fset, src, file, pkg, node, target, coverage)
 		},
 		func() (result.Candidate, bool) {
@@ -223,6 +226,15 @@ func mutationFromIfNode(root string, fset *token.FileSet, src []byte, file, pkg 
 	}
 
 	return mutationFromConditionExpr(root, fset, src, file, pkg, ifStmt.Cond, result.MutationKindControlFlow, target, coverage)
+}
+
+func mutationFromForNode(root string, fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target result.Target, coverage result.FileCoverage) (result.Candidate, bool) {
+	forStmt, ok := node.(*ast.ForStmt)
+	if !ok {
+		return result.Candidate{}, false
+	}
+
+	return mutationFromConditionExpr(root, fset, src, file, pkg, forStmt.Cond, result.MutationKindControlFlow, target, coverage)
 }
 
 func mutationFromSwitchNode(root string, fset *token.FileSet, src []byte, file, pkg string, node ast.Node, target result.Target, coverage result.FileCoverage) (result.Candidate, bool) {
