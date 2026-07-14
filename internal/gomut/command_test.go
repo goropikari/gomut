@@ -254,6 +254,29 @@ func TestRecordJSONIncludesMutationReplacementDetails(t *testing.T) {
 		assert.JSONEq(t, `{"target":{"mode":"package","value":"./sample"},"started_at":"","command":"","summary":{"total":0,"killed":0,"lived":0,"not_covered":0,"timed_out":0,"not_viable":0},"mutation":{"file":"sample.go","line":12,"kind":"control_flow","original":"ready","replacement":"!ready","result":"KILLED","message":"killed by tests"}}`, string(data))
 	})
 
+	t.Run("given a loop control mutation record, it serializes the loop_control kind", func(t *testing.T) {
+		// Arrange
+		record := result.Record{
+			Target: result.Target{Mode: result.TargetModePackage, Value: "./sample"},
+			Mutation: result.MutationMetadata{
+				File:        "sample.go",
+				Line:        24,
+				Kind:        result.MutationKindLoopControl,
+				Original:    "break",
+				Replacement: "continue",
+				Result:      result.MutationResultLived,
+				Message:     "ok",
+			},
+		}
+
+		// Act
+		data, err := json.Marshal(record)
+
+		// Assert
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"target":{"mode":"package","value":"./sample"},"started_at":"","command":"","summary":{"total":0,"killed":0,"lived":0,"not_covered":0,"timed_out":0,"not_viable":0},"mutation":{"file":"sample.go","line":24,"kind":"loop_control","original":"break","replacement":"continue","result":"LIVED","message":"ok"}}`, string(data))
+	})
+
 	t.Run("given an assignment arithmetic mutation record, it serializes the assignment_arithmetic kind", func(t *testing.T) {
 		// Arrange
 		record := result.Record{

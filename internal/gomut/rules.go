@@ -97,41 +97,44 @@ var unaryMutationSpecs = map[token.Token]unaryMutationSpec{
 	token.XOR: {kind: result.MutationKindUnaryBitwiseNot},
 }
 
-func mutationCandidateFromNode(root string, fset *token.FileSet, src []byte, astFile *ast.File, file, pkg string, node ast.Node, target result.Target, coverage result.FileCoverage) (result.Candidate, bool) {
-	if candidate, ok := mutationFromBinaryNode(root, fset, src, file, pkg, node, target, coverage); ok {
-		return candidate, true
+func mutationCandidateFromNode(root string, fset *token.FileSet, src []byte, astFile *ast.File, file, pkg string, node ast.Node, ancestors []ast.Node, target result.Target, coverage result.FileCoverage) (result.Candidate, bool) {
+	finders := []func() (result.Candidate, bool){
+		func() (result.Candidate, bool) {
+			return mutationFromBinaryNode(root, fset, src, file, pkg, node, target, coverage)
+		},
+		func() (result.Candidate, bool) {
+			return mutationFromBooleanNode(root, fset, src, file, pkg, node, target, coverage)
+		},
+		func() (result.Candidate, bool) {
+			return mutationFromBasicLitNode(root, fset, src, astFile, file, pkg, node, target, coverage)
+		},
+		func() (result.Candidate, bool) {
+			return mutationFromUnaryNode(root, fset, src, file, pkg, node, target, coverage)
+		},
+		func() (result.Candidate, bool) {
+			return mutationFromAssignNode(root, fset, src, file, pkg, node, target, coverage)
+		},
+		func() (result.Candidate, bool) {
+			return mutationFromIncDecNode(root, fset, src, file, pkg, node, target, coverage)
+		},
+		func() (result.Candidate, bool) {
+			return mutationFromBranchNode(root, fset, src, file, pkg, node, ancestors, target, coverage)
+		},
+		func() (result.Candidate, bool) {
+			return mutationFromIfNode(root, fset, src, file, pkg, node, target, coverage)
+		},
+		func() (result.Candidate, bool) {
+			return mutationFromSwitchNode(root, fset, src, file, pkg, node, target, coverage)
+		},
+		func() (result.Candidate, bool) {
+			return mutationFromReturnNode(root, fset, src, file, pkg, node, target, coverage)
+		},
 	}
 
-	if candidate, ok := mutationFromBooleanNode(root, fset, src, file, pkg, node, target, coverage); ok {
-		return candidate, true
-	}
-
-	if candidate, ok := mutationFromBasicLitNode(root, fset, src, astFile, file, pkg, node, target, coverage); ok {
-		return candidate, true
-	}
-
-	if candidate, ok := mutationFromUnaryNode(root, fset, src, file, pkg, node, target, coverage); ok {
-		return candidate, true
-	}
-
-	if candidate, ok := mutationFromAssignNode(root, fset, src, file, pkg, node, target, coverage); ok {
-		return candidate, true
-	}
-
-	if candidate, ok := mutationFromIncDecNode(root, fset, src, file, pkg, node, target, coverage); ok {
-		return candidate, true
-	}
-
-	if candidate, ok := mutationFromIfNode(root, fset, src, file, pkg, node, target, coverage); ok {
-		return candidate, true
-	}
-
-	if candidate, ok := mutationFromSwitchNode(root, fset, src, file, pkg, node, target, coverage); ok {
-		return candidate, true
-	}
-
-	if candidate, ok := mutationFromReturnNode(root, fset, src, file, pkg, node, target, coverage); ok {
-		return candidate, true
+	for _, find := range finders {
+		if candidate, ok := find(); ok {
+			return candidate, true
+		}
 	}
 
 	return result.Candidate{}, false
@@ -540,6 +543,67 @@ func mutationFromIncDecStmt(root string, fset *token.FileSet, src []byte, file, 
 	}, true
 }
 
+func mutationFromBranchNode(root string, fset *token.FileSet, src []byte, file, pkg string, node ast.Node, ancestors []ast.Node, target result.Target, coverage result.FileCoverage) (result.Candidate, bool) {
+	branchStmt, ok := node.(*ast.BranchStmt)
+	if !ok {
+		return result.Candidate{}, false
+	}
+
+	if branchStmt.Label != nil {
+		return result.Candidate{}, false
+	}
+
+	replacement, ok := loopControlReplacement(branchStmt.Tok)
+	if !ok {
+		return result.Candidate{}, false
+	}
+
+	if !isLoopBranch(ancestors) {
+		return result.Candidate{}, false
+	}
+
+	return loopControlCandidate(root, fset, src, file, pkg, branchStmt, replacement, target, coverage)
+}
+
+func loopControlReplacement(tok token.Token) (string, bool) {
+	switch tok {
+	case token.BREAK:
+		return "continue", true
+	case token.CONTINUE:
+		return "break", true
+	default:
+		return "", false
+	}
+}
+
+func loopControlCandidate(root string, fset *token.FileSet, src []byte, file, pkg string, branchStmt *ast.BranchStmt, replacement string, target result.Target, coverage result.FileCoverage) (result.Candidate, bool) {
+	pos := fset.Position(branchStmt.TokPos)
+	line := pos.Line
+
+	if !mutationAllowedByTarget(root, file, line, target) {
+		return result.Candidate{}, false
+	}
+
+	start := pos.Offset
+	end := start + len(branchStmt.Tok.String())
+
+	if start < 0 || end > len(src) || start >= end {
+		return result.Candidate{}, false
+	}
+
+	return result.Candidate{
+		File:        repoRel(root, file),
+		Line:        line,
+		Kind:        result.MutationKindLoopControl,
+		Original:    branchStmt.Tok.String(),
+		Replacement: replacement,
+		Start:       start,
+		End:         end,
+		PackagePath: pkg,
+		Covered:     lineCovered(coverage, line),
+	}, true
+}
+
 func isNilExpr(expr ast.Expr) bool {
 	ident, ok := expr.(*ast.Ident)
 	return ok && ident.Name == "nil"
@@ -604,6 +668,19 @@ func lineCovered(coverage result.FileCoverage, line int) bool {
 	for _, block := range coverage.Ranges {
 		if line >= block.StartLine && line <= block.EndLine && block.Covered {
 			return true
+		}
+	}
+
+	return false
+}
+
+func isLoopBranch(ancestors []ast.Node) bool {
+	for i := len(ancestors) - 1; i >= 0; i-- {
+		switch ancestors[i].(type) {
+		case *ast.ForStmt, *ast.RangeStmt:
+			return true
+		case *ast.SwitchStmt, *ast.TypeSwitchStmt, *ast.SelectStmt:
+			return false
 		}
 	}
 

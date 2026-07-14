@@ -245,6 +245,7 @@ exclude:
 | `assignment_bitwise`    | `&=` -> \|=, \|= -> `&=`, `^=` -> `&=`, `&^=` -> \|=                           |
 | `inc_dec`               | `++` -> `--`, `--` -> `++`                                                     |
 | `control_flow`          | `switch x` condition inversion                                                 |
+| `loop_control`          | `break` -> `continue`, `continue` -> `break` within loops                      |
 | `return`                | `return true` -> `return false`, `return false` -> `return true`               |
 | `nil_check`             | `== nil` -> `!= nil`, `!= nil` -> `== nil`                                     |
 | `boolean_literal`       | `true` -> `false`, `false` -> `true`                                           |

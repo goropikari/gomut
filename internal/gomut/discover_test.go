@@ -236,4 +236,70 @@ func Greeting() string {
 		assert.Equal(t, `"hello"`, stringLiterals[0].Original)
 		assert.NotContains(t, []string{`"errors"`, `"encoding/json"`, `"net/http/pprof"`, `"math"`}, stringLiterals[0].Original)
 	})
+
+	t.Run("given loop branches, it discovers break and continue only inside loops", func(t *testing.T) {
+		// Arrange
+		root := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module example.com/mut\n\ngo 1.26\n"), 0o600))
+		require.NoError(t, os.MkdirAll(filepath.Join(root, "sample"), 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(root, "sample", "sample.go"), []byte(`package sample
+
+func SumPositive(values []int) int {
+	total := 0
+
+	for _, value := range values {
+		if value < 0 {
+			break
+		}
+
+		if value == 0 {
+			continue
+		}
+
+		total += value
+	}
+
+	return total
+}
+
+func BreakInsideSwitch(values []int) int {
+	for _, value := range values {
+		switch value {
+		case 0:
+			break
+		}
+	}
+
+	return 0
+}
+`), 0o600))
+
+		// Act
+		candidates, err := gomut.DiscoverCandidates(root, []string{"./sample"}, result.Target{Mode: result.TargetModePackage, Value: "./sample"}, map[string]result.FileCoverage{})
+
+		// Assert
+		require.NoError(t, err)
+
+		var loopControlCandidates []result.Candidate
+
+		for _, candidate := range candidates {
+			if candidate.Kind == result.MutationKindLoopControl {
+				loopControlCandidates = append(loopControlCandidates, candidate)
+			}
+		}
+
+		require.Len(t, loopControlCandidates, 2)
+
+		originals := []string{loopControlCandidates[0].Original, loopControlCandidates[1].Original}
+		replacements := []string{loopControlCandidates[0].Replacement, loopControlCandidates[1].Replacement}
+
+		assert.ElementsMatch(t, []string{"break", "continue"}, originals)
+		assert.ElementsMatch(t, []string{"continue", "break"}, replacements)
+
+		for _, candidate := range loopControlCandidates {
+			assert.Contains(t, candidate.File, filepath.ToSlash(filepath.Join("sample", "sample.go")))
+			assert.Equal(t, result.MutationKindLoopControl, candidate.Kind)
+			assert.Positive(t, candidate.Line)
+		}
+	})
 }

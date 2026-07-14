@@ -15,6 +15,7 @@ var allMutationKinds = []MutationKind{
 	MutationKindAssignmentArithmetic,
 	MutationKindAssignmentShift,
 	MutationKindControlFlow,
+	MutationKindLoopControl,
 	MutationKindAssignmentBitwise,
 	MutationKindIncDec,
 	MutationKindReturn,
