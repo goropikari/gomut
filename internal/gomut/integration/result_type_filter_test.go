@@ -141,6 +141,14 @@ func Add(a, b int) int {
 	return a + b
 }
 
+func KeepCommonBits(mask, flag uint8) uint8 {
+	return mask & flag
+}
+
+func Greeting() string {
+	return "hello"
+}
+
 func SumPositive(values []int) int {
 	total := 0
 
@@ -181,6 +189,18 @@ func TestIsAtLeast(t *testing.T) {
 func TestAdd(t *testing.T) {
 	if got := sample.Add(1, 2); got != 3 {
 		t.Fatalf("expected sum to be 3, got %d", got)
+	}
+}
+
+func TestKeepCommonBits(t *testing.T) {
+	if got := sample.KeepCommonBits(0b1101, 0b1011); got != 0b1001 {
+		t.Fatalf("expected common bits to be kept, got %08b", got)
+	}
+}
+
+func TestGreeting(t *testing.T) {
+	if got := sample.Greeting(); got != "hello" {
+		t.Fatalf("expected greeting to be hello, got %q", got)
 	}
 }
 

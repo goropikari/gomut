@@ -40,8 +40,12 @@ html: report.html
 type:
   - lived
 kind:
-  - comparison_operator
-  - return
+  mode: all
+  enable:
+    - comparison_operator
+    - return
+  disable:
+    - return
 parallel: 3
 exclude:
   - internal/generated
@@ -70,8 +74,11 @@ baseline:
 		assert.Equal(t, "report.html", *cfg.HTML)
 		require.Len(t, cfg.Type, 1)
 		assert.Equal(t, "lived", cfg.Type[0])
-		require.Len(t, cfg.Kind, 2)
-		assert.Equal(t, []string{"comparison_operator", "return"}, []string(cfg.Kind))
+		require.NotNil(t, cfg.Kind)
+		require.NotNil(t, cfg.Kind.Mode)
+		assert.Equal(t, "all", *cfg.Kind.Mode)
+		assert.Equal(t, []string{"comparison_operator", "return"}, []string(cfg.Kind.Enable))
+		assert.Equal(t, []string{"return"}, []string(cfg.Kind.Disable))
 		require.NotNil(t, cfg.Parallel)
 		assert.Equal(t, 3, *cfg.Parallel)
 		assert.Equal(t, []string{"internal/generated"}, cfg.Exclude)
@@ -96,11 +103,16 @@ baseline:
 		assert.Contains(t, err.Error(), ".gomut.yaml")
 	})
 
-	t.Run("given a scalar kind value, it parses the value as a single-item list", func(t *testing.T) {
+	t.Run("given a kind block, it parses the nested fields", func(t *testing.T) {
 		// Arrange
 		dir := t.TempDir()
 		path := filepath.Join(dir, ".gomut.yaml")
-		require.NoError(t, os.WriteFile(path, []byte(`kind: comparison_operator
+		require.NoError(t, os.WriteFile(path, []byte(`kind:
+  mode: standard
+  enable:
+    - nil_check
+  disable:
+    - guard_clause
 `), 0o600))
 
 		// Act
@@ -108,6 +120,10 @@ baseline:
 
 		// Assert
 		require.NoError(t, err)
-		assert.Equal(t, []string{"comparison_operator"}, []string(cfg.Kind))
+		require.NotNil(t, cfg.Kind)
+		require.NotNil(t, cfg.Kind.Mode)
+		assert.Equal(t, "standard", *cfg.Kind.Mode)
+		assert.Equal(t, []string{"nil_check"}, []string(cfg.Kind.Enable))
+		assert.Equal(t, []string{"guard_clause"}, []string(cfg.Kind.Disable))
 	})
 }

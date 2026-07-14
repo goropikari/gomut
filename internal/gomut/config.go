@@ -25,7 +25,7 @@ type Config struct {
 	JSONL    *string         `yaml:"jsonl,omitempty"`
 	HTML     *string         `yaml:"html,omitempty"`
 	Type     []string        `yaml:"type,omitempty"`
-	Kind     yamlStringList  `yaml:"kind,omitempty"`
+	Kind     *KindConfig     `yaml:"kind,omitempty"`
 	Parallel *int            `yaml:"parallel,omitempty"`
 	Exclude  []string        `yaml:"exclude,omitempty"`
 	Baseline *BaselineConfig `yaml:"baseline,omitempty"`
@@ -61,6 +61,13 @@ func (s *yamlStringList) UnmarshalYAML(value *yaml.Node) error {
 	}
 }
 
+// KindConfig represents the mutation kind selection block in the config file.
+type KindConfig struct {
+	Mode    *string        `yaml:"mode,omitempty"`
+	Enable  yamlStringList `yaml:"enable,omitempty"`
+	Disable yamlStringList `yaml:"disable,omitempty"`
+}
+
 // ConfigTarget represents the target selection block in the config file.
 type ConfigTarget struct {
 	Mode  *result.TargetMode `yaml:"mode,omitempty"`
@@ -90,25 +97,29 @@ type RunConfig struct {
 }
 
 type testRunInputs struct {
-	targetArg       string
-	diffRange       string
-	resultTypes     []string
-	timeout         time.Duration
-	parallel        int
-	parallelChanged bool
-	progressMode    string
-	progressChanged bool
-	verbose         bool
-	kind            []string
-	kindChanged     bool
-	jsonlOutput     string
-	jsonlEnabled    bool
-	htmlOutput      string
-	htmlEnabled     bool
-	targetChanged   bool
-	typeChanged     bool
-	timeoutChanged  bool
-	config          Config
+	targetArg          string
+	diffRange          string
+	resultTypes        []string
+	timeout            time.Duration
+	parallel           int
+	parallelChanged    bool
+	progressMode       string
+	progressChanged    bool
+	verbose            bool
+	kindMode           string
+	kindModeChanged    bool
+	kindEnable         []string
+	kindEnableChanged  bool
+	kindDisable        []string
+	kindDisableChanged bool
+	jsonlOutput        string
+	jsonlEnabled       bool
+	htmlOutput         string
+	htmlEnabled        bool
+	targetChanged      bool
+	typeChanged        bool
+	timeoutChanged     bool
+	config             Config
 }
 
 // DefaultConfigPath returns the default gomut config file path for a root directory.
@@ -176,7 +187,7 @@ func (c *Command) buildTestRunConfig(cmd *cobra.Command, args ...string) (RunCon
 		return RunConfig{}, err
 	}
 
-	kindFilter, err := result.ParseMutationKindFilter(inputs.kind)
+	kindFilter, err := result.ParseMutationKindFilter(inputs.kindMode, inputs.kindEnable, inputs.kindDisable)
 	if err != nil {
 		return RunConfig{}, err
 	}
@@ -223,7 +234,9 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command, args []string) (testRunI
 	resultTypes, _ := cmd.Flags().GetStringSlice("type")
 	progressMode, _ := cmd.Flags().GetString("progress")
 	verbose, _ := cmd.Flags().GetBool("verbose")
-	kind, _ := cmd.Flags().GetStringSlice("kind")
+	kindMode, _ := cmd.Flags().GetString("mode")
+	kindEnable, _ := cmd.Flags().GetStringSlice("enable")
+	kindDisable, _ := cmd.Flags().GetStringSlice("disable")
 
 	targetArg := ""
 	if len(args) == 1 {
@@ -231,25 +244,29 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command, args []string) (testRunI
 	}
 
 	return testRunInputs{
-		targetArg:       targetArg,
-		diffRange:       diffRange,
-		resultTypes:     append([]string(nil), resultTypes...),
-		timeout:         timeout,
-		parallel:        parallel,
-		parallelChanged: cmd.Flags().Changed("parallel"),
-		progressMode:    progressMode,
-		progressChanged: cmd.Flags().Changed("progress"),
-		verbose:         verbose,
-		kind:            append([]string(nil), kind...),
-		kindChanged:     cmd.Flags().Changed("kind"),
-		jsonlOutput:     c.jsonlOutput,
-		jsonlEnabled:    c.jsonlEnabled,
-		htmlOutput:      c.htmlOutput,
-		htmlEnabled:     c.htmlEnabled,
-		targetChanged:   len(args) > 0 || cmd.Flags().Changed("diff"),
-		typeChanged:     cmd.Flags().Changed("type"),
-		timeoutChanged:  cmd.Flags().Changed("timeout"),
-		config:          config,
+		targetArg:          targetArg,
+		diffRange:          diffRange,
+		resultTypes:        append([]string(nil), resultTypes...),
+		timeout:            timeout,
+		parallel:           parallel,
+		parallelChanged:    cmd.Flags().Changed("parallel"),
+		progressMode:       progressMode,
+		progressChanged:    cmd.Flags().Changed("progress"),
+		verbose:            verbose,
+		kindMode:           kindMode,
+		kindModeChanged:    cmd.Flags().Changed("mode"),
+		kindEnable:         append([]string(nil), kindEnable...),
+		kindEnableChanged:  cmd.Flags().Changed("enable"),
+		kindDisable:        append([]string(nil), kindDisable...),
+		kindDisableChanged: cmd.Flags().Changed("disable"),
+		jsonlOutput:        c.jsonlOutput,
+		jsonlEnabled:       c.jsonlEnabled,
+		htmlOutput:         c.htmlOutput,
+		htmlEnabled:        c.htmlEnabled,
+		targetChanged:      len(args) > 0 || cmd.Flags().Changed("diff"),
+		typeChanged:        cmd.Flags().Changed("type"),
+		timeoutChanged:     cmd.Flags().Changed("timeout"),
+		config:             config,
 	}, nil
 }
 
@@ -289,11 +306,70 @@ func (c *Command) applyResultTypeConfigDefaults(inputs *testRunInputs) {
 }
 
 func (c *Command) applyKindConfigDefaults(inputs *testRunInputs) {
-	if inputs.kindChanged || len(inputs.config.Kind) == 0 {
-		return
+	kindConfig := inputs.config.Kind
+	baseMode := string(result.MutationKindModeStandard)
+	configEnable := []string(nil)
+	configDisable := []string(nil)
+
+	if kindConfig != nil {
+		if kindConfig.Mode != nil {
+			baseMode = *kindConfig.Mode
+		}
+
+		configEnable = append([]string(nil), kindConfig.Enable...)
+		configDisable = append([]string(nil), kindConfig.Disable...)
 	}
 
-	inputs.kind = append([]string(nil), inputs.config.Kind...)
+	finalMode := baseMode
+	if inputs.kindModeChanged {
+		finalMode = inputs.kindMode
+	}
+
+	finalEnable := configEnable
+	if inputs.kindEnableChanged {
+		finalEnable = append([]string(nil), inputs.kindEnable...)
+
+		finalDisable := configDisable
+		if len(finalDisable) > 0 {
+			finalDisable = removeStringValues(finalDisable, finalEnable)
+		}
+
+		configDisable = finalDisable
+	}
+
+	finalDisable := configDisable
+	if inputs.kindDisableChanged {
+		finalDisable = append([]string(nil), inputs.kindDisable...)
+		if len(finalEnable) > 0 {
+			finalEnable = removeStringValues(finalEnable, finalDisable)
+		}
+	}
+
+	inputs.kindMode = finalMode
+	inputs.kindEnable = finalEnable
+	inputs.kindDisable = finalDisable
+}
+
+func removeStringValues(values, excluded []string) []string {
+	if len(values) == 0 || len(excluded) == 0 {
+		return append([]string(nil), values...)
+	}
+
+	excludedSet := make(map[string]struct{}, len(excluded))
+	for _, value := range excluded {
+		excludedSet[value] = struct{}{}
+	}
+
+	filtered := make([]string, 0, len(values))
+	for _, value := range values {
+		if _, ok := excludedSet[value]; ok {
+			continue
+		}
+
+		filtered = append(filtered, value)
+	}
+
+	return filtered
 }
 
 func (c *Command) applyTimeoutConfigDefaults(inputs *testRunInputs) error {

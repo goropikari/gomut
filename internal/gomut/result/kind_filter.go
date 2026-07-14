@@ -31,18 +31,108 @@ var allMutationKinds = []MutationKind{
 	MutationKindStringLiteral,
 }
 
+var standardMutationKinds = []MutationKind{
+	MutationKindComparisonOperator,
+	MutationKindLogicalOperator,
+	MutationKindArithmeticOperator,
+	MutationKindGuardClause,
+	MutationKindReturn,
+	MutationKindNilCheck,
+}
+
 // AllMutationKinds returns the supported mutation kinds in declaration order.
 func AllMutationKinds() []MutationKind {
 	return append([]MutationKind(nil), allMutationKinds...)
 }
+
+// StandardMutationKinds returns the default standard kind set in declaration order.
+func StandardMutationKinds() []MutationKind {
+	return append([]MutationKind(nil), standardMutationKinds...)
+}
+
+// MutationKindMode defines the base mutation kind selection mode.
+type MutationKindMode string
+
+const (
+	MutationKindModeStandard MutationKindMode = "standard"
+	MutationKindModeAll      MutationKindMode = "all"
+)
 
 // MutationKindFilter defines the allowed mutation kinds for discovery.
 type MutationKindFilter struct {
 	allowed map[MutationKind]struct{}
 }
 
-// ParseMutationKindFilter converts raw CLI or config values into a mutation kind filter.
-func ParseMutationKindFilter(values []string) (MutationKindFilter, error) {
+// ParseMutationKindFilter converts kind mode, enable, and disable values into a mutation kind filter.
+func ParseMutationKindFilter(mode string, enable, disable []string) (MutationKindFilter, error) {
+	selected, err := parseMutationKinds(mode, enable, disable)
+	if err != nil {
+		return MutationKindFilter{}, err
+	}
+
+	return MutationKindFilter{allowed: selected}, nil
+}
+
+// Matches reports whether the given kind should be included in discovery output.
+func (f MutationKindFilter) Matches(kind MutationKind) bool {
+	if f.allowed == nil {
+		return true
+	}
+
+	_, ok := f.allowed[kind]
+
+	return ok
+}
+
+func parseMutationKinds(mode string, enable, disable []string) (map[MutationKind]struct{}, error) {
+	base, err := parseMutationKindMode(mode)
+	if err != nil {
+		return nil, err
+	}
+
+	allowed := make(map[MutationKind]struct{}, len(base))
+	for _, kind := range base {
+		allowed[kind] = struct{}{}
+	}
+
+	enableKinds, invalidEnable := parseMutationKindList(enable)
+
+	disableKinds, invalidDisable := parseMutationKindList(disable)
+
+	invalid := append(invalidEnable, invalidDisable...)
+	if len(invalid) > 0 {
+		return nil, fmt.Errorf(
+			"unknown mutation kind%s: %s (available: %s)",
+			pluralSuffix(len(invalid)),
+			strings.Join(invalid, ", "),
+			strings.Join(allMutationKindStrings(), ", "),
+		)
+	}
+
+	for _, kind := range enableKinds {
+		allowed[kind] = struct{}{}
+	}
+
+	for _, kind := range disableKinds {
+		delete(allowed, kind)
+	}
+
+	return allowed, nil
+}
+
+func parseMutationKindMode(mode string) ([]MutationKind, error) {
+	trimmed := strings.ToLower(strings.TrimSpace(mode))
+	switch MutationKindMode(trimmed) {
+	case "", MutationKindModeStandard:
+		return StandardMutationKinds(), nil
+	case MutationKindModeAll:
+		return AllMutationKinds(), nil
+	default:
+		return nil, fmt.Errorf("unknown mutation kind mode: %s (available: standard, all)", mode)
+	}
+}
+
+func parseMutationKindList(values []string) ([]MutationKind, []string) {
 	allowed := map[MutationKind]struct{}{}
 	invalid := map[string]struct{}{}
 	orderedInvalid := make([]string, 0)
@@ -68,27 +158,14 @@ func ParseMutationKindFilter(values []string) (MutationKindFilter, error) {
 		}
 	}
 
-	if len(orderedInvalid) > 0 {
-		return MutationKindFilter{}, fmt.Errorf(
-			"unknown mutation kind%s: %s (available: %s)",
-			pluralSuffix(len(orderedInvalid)),
-			strings.Join(orderedInvalid, ", "),
-			strings.Join(allMutationKindStrings(), ", "),
-		)
+	kinds := make([]MutationKind, 0, len(allowed))
+	for _, kind := range allMutationKinds {
+		if _, ok := allowed[kind]; ok {
+			kinds = append(kinds, kind)
+		}
 	}
 
-	return MutationKindFilter{allowed: allowed}, nil
-}
-
-// Matches reports whether the given kind should be included in discovery output.
-func (f MutationKindFilter) Matches(kind MutationKind) bool {
-	if len(f.allowed) == 0 {
-		return true
-	}
-
-	_, ok := f.allowed[kind]
-
-	return ok
+	return kinds, orderedInvalid
 }
 
 func isKnownMutationKind(kind MutationKind) bool {
