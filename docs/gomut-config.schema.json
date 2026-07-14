@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:gomut:gomut-config.schema.json",
+  "title": "gomut config",
+  "description": "JSON Schema for .gomut.yaml",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "",
+            "package",
+            "all",
+            "diff"
+          ]
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "package"
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          },
+          "then": {
+            "required": [
+              "value"
+            ],
+            "properties": {
+              "value": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "timeout": {
+      "type": "string"
+    },
+    "progress": {
+      "type": "string",
+      "enum": [
+        "",
+        "auto",
+        "on",
+        "off"
+      ]
+    },
+    "jsonl": {
+      "type": "string"
+    },
+    "html": {
+      "type": "string"
+    },
+    "type": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/mutationResultOrEmpty"
+      }
+    },
+    "kind": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "",
+            "standard",
+            "all"
+          ]
+        },
+        "enable": {
+          "$ref": "#/$defs/mutationKindOrArray"
+        },
+        "disable": {
+          "$ref": "#/$defs/mutationKindOrArray"
+        }
+      }
+    },
+    "parallel": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "exclude": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "input": {
+          "type": "string"
+        },
+        "output": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "mutationResultOrEmpty": {
+      "oneOf": [
+        {
+          "const": ""
+        },
+        {
+          "$ref": "#/$defs/mutationResult"
+        }
+      ]
+    },
+    "mutationResult": {
+      "type": "string",
+      "enum": [
+        "killed",
+        "lived",
+        "not-covered",
+        "timed-out",
+        "not-viable"
+      ]
+    },
+    "mutationKindOrEmpty": {
+      "oneOf": [
+        {
+          "const": ""
+        },
+        {
+          "$ref": "#/$defs/mutationKind"
+        }
+      ]
+    },
+    "mutationKind": {
+      "type": "string",
+      "enum": [
+        "comparison_operator",
+        "logical_operator",
+        "guard_clause",
+        "arithmetic_operator",
+        "bitwise_operator",
+        "shift_operator",
+        "assignment_arithmetic",
+        "assignment_shift",
+        "control_flow",
+        "loop_control",
+        "assignment_bitwise",
+        "inc_dec",
+        "return",
+        "nil_check",
+        "boolean_literal",
+        "integer_literal",
+        "float_literal",
+        "rune_literal",
+        "unary_not",
+        "unary_minus",
+        "unary_bitwise_not",
+        "switch_condition",
+        "string_literal"
+      ]
+    },
+    "mutationKindOrArray": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/mutationKindOrEmpty"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mutationKindOrEmpty"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -21,7 +21,7 @@ For the Japanese version, see [README.ja.md](README.ja.md).
 - Execute `go test` per mutation and classify the result
 - Configure a per-mutation timeout with `--timeout`
 - Control progress reporting with `--progress`
-- Filter mutation candidates by kind with `--kind`
+- Filter mutation candidates by kind with `--mode`, `--enable`, and `--disable`
 - Emit results as JSON Lines
 - Generate an optional HTML report
 
@@ -86,8 +86,8 @@ gomut test --diff main
 gomut test ./sample --jsonl
 gomut test ./sample --jsonl mutations.jsonl
 gomut test ./sample --type lived --jsonl
-gomut test ./sample --kind comparison_operator --jsonl
-gomut test ./sample --kind comparison_operator,return --kind nil_check --jsonl
+gomut test ./sample --mode all --disable string_literal --jsonl
+gomut test ./sample --enable bitwise_operator --disable return --jsonl
 gomut test ./sample --jsonl mutations.jsonl --html report.html
 ```
 
@@ -148,13 +148,18 @@ parallel: 4
 jsonl: mutations.jsonl
 html: report.html
 kind:
-  - comparison_operator
-  - return
+  mode: standard
+  enable:
+    - bitwise_operator
+  disable:
+    - return
 exclude:
   - "*.pb.go"
   - "*_mock.go"
   - internal/generated
 ```
+
+See [docs/gomut-config.schema.json](docs/gomut-config.schema.json) for the JSON Schema.
 
 ## Output
 
@@ -167,9 +172,11 @@ By default, JSON Lines are written to `stdout`.
 - `--html <path>` without `--jsonl` suppresses JSONL output
 - `--progress=auto|on|off` controls mutation progress reporting on `stderr`
 - `--progress` defaults to `auto`, which shows progress in interactive terminals and stays quiet in non-TTY and CI runs
-- `--kind` filters mutation candidates before execution
-- `--kind` accepts single values, comma-separated values, and repeated flags
-- `--kind` affects the JSONL records, HTML report, and summary counts
+- `--mode` selects the base mutation kind set (`standard` or `all`)
+- `--enable` adds mutation kinds on top of the selected mode
+- `--disable` removes mutation kinds, and it wins over `--enable`
+- When no kind flags are set, `standard` is used by default
+- Kind selection affects the JSONL records, HTML report, and summary counts
 - `--type` filters emitted mutation results after execution
 - `--type` accepts single values, comma-separated values, and repeated flags
 - `--type` affects both JSONL output and the summary on `stderr`
@@ -256,6 +263,15 @@ exclude:
 | `unary_minus`           | `-x` -> `x`                                                                    |
 | `unary_bitwise_not`     | `^x` -> `x`                                                                    |
 | `string_literal`        | `""` -> `"mutated"`, non-empty string literal -> `""`                          |
+
+The default `standard` kind set is:
+
+- `comparison_operator`
+- `logical_operator`
+- `arithmetic_operator`
+- `guard_clause`
+- `return`
+- `nil_check`
 
 ## Preconditions
 

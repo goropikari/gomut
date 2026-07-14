@@ -21,7 +21,7 @@
 - mutation ごとに `go test` を実行して結果を分類
 - `--timeout` で mutation ごとのタイムアウトを設定
 - `--progress` で進捗表示を制御
-- `--kind` で mutation 種別を絞り込み
+- `--mode` / `--enable` / `--disable` で mutation 種別を絞り込み
 - 結果を JSON Lines 形式で出力
 - HTML レポートを任意で生成
 
@@ -86,8 +86,8 @@ gomut test --diff main
 gomut test ./internal/gomut --jsonl
 gomut test ./internal/gomut --jsonl mutations.jsonl
 gomut test ./internal/gomut --type lived --jsonl
-gomut test ./internal/gomut --kind comparison_operator --jsonl
-gomut test ./internal/gomut --kind comparison_operator,return --kind nil_check --jsonl
+gomut test ./internal/gomut --mode all --disable string_literal --jsonl
+gomut test ./internal/gomut --enable bitwise_operator --disable return --jsonl
 gomut test ./internal/gomut --jsonl mutations.jsonl --html report.html
 ```
 
@@ -148,13 +148,18 @@ parallel: 4
 jsonl: mutations.jsonl
 html: report.html
 kind:
-  - comparison_operator
-  - return
+  mode: standard
+  enable:
+    - bitwise_operator
+  disable:
+    - return
 exclude:
   - "*.pb.go"
   - "*_mock.go"
   - internal/generated
 ```
+
+JSON Schema は [docs/gomut-config.schema.json](docs/gomut-config.schema.json) を参照してください。
 
 ## 出力
 
@@ -167,9 +172,11 @@ JSON Lines はデフォルトで `stdout` に出ます。
 - `--html <path>` を指定して `--jsonl` を付けない場合、JSONL 出力は抑止される
 - `--progress=auto|on|off` で mutation の進捗表示を `stderr` に出すか制御できる
 - `--progress` の既定値は `auto` で、対話的な端末では進捗を表示し、非 TTY や CI では静かに動作する
-- `--kind` は mutation 候補を実行前に絞り込む
-- `--kind` は単一指定、カンマ区切り、繰り返し指定に対応する
-- `--kind` は JSONL レコード、HTML レポート、summary のすべてに反映される
+- `--mode` は基本となる mutation kind の集合を選ぶ (`standard` または `all`)
+- `--enable` で選択中の mode に kind を追加する
+- `--disable` で kind を除外する。`--enable` より優先される
+- kind フラグを省略した場合は `standard` が既定になる
+- kind の選択は JSONL レコード、HTML レポート、summary のすべてに反映される
 - `--type` は mutation 実行後の結果を絞り込む
 - `--type` は単一指定、カンマ区切り、繰り返し指定に対応する
 - `--type` は JSONL 出力と `stderr` の summary の両方に反映される
@@ -256,6 +263,15 @@ exclude:
 | `unary_minus`           | `-x` -> `x`                                                                    |
 | `unary_bitwise_not`     | `^x` -> `x`                                                                    |
 | `string_literal`        | `""` -> `"mutated"`、空でない文字列リテラル -> `""`                            |
+
+既定の `standard` kind セットは次のとおりです。
+
+- `comparison_operator`
+- `logical_operator`
+- `arithmetic_operator`
+- `guard_clause`
+- `return`
+- `nil_check`
 
 ## 前提条件
 
