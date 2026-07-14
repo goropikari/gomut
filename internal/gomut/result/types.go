@@ -4,7 +4,6 @@ type TargetMode string
 
 const (
 	TargetModePackage TargetMode = "package"
-	TargetModeAll     TargetMode = "all"
 	TargetModeDiff    TargetMode = "diff"
 )
 

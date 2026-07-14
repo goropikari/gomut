@@ -17,25 +17,25 @@ import (
 func TestResolveTarget(t *testing.T) {
 	t.Run("given a package target, it returns package mode", func(t *testing.T) {
 		// Arrange
-		target, err := gomut.ResolveTarget("./internal/foo", false, "")
+		target, err := gomut.ResolveTarget("./internal/foo", "")
 
 		// Assert
 		require.NoError(t, err)
 		assert.Equal(t, result.Target{Mode: result.TargetModePackage, Value: "./internal/foo"}, target)
 	})
 
-	t.Run("given ./... as the target, it returns all mode", func(t *testing.T) {
+	t.Run("given ./... as the target, it returns package mode", func(t *testing.T) {
 		// Arrange
-		target, err := gomut.ResolveTarget("./...", false, "")
+		target, err := gomut.ResolveTarget("./...", "")
 
 		// Assert
 		require.NoError(t, err)
-		assert.Equal(t, result.Target{Mode: result.TargetModeAll, Value: "./..."}, target)
+		assert.Equal(t, result.Target{Mode: result.TargetModePackage, Value: "./..."}, target)
 	})
 
 	t.Run("given a diff range, it returns diff mode", func(t *testing.T) {
 		// Arrange
-		target, err := gomut.ResolveTarget("", false, "HEAD~1..HEAD")
+		target, err := gomut.ResolveTarget("", "HEAD~1..HEAD")
 
 		// Assert
 		require.NoError(t, err)
@@ -44,7 +44,7 @@ func TestResolveTarget(t *testing.T) {
 
 	t.Run("given no target, it returns a helpful error", func(t *testing.T) {
 		// Arrange
-		target, err := gomut.ResolveTarget("", false, "")
+		target, err := gomut.ResolveTarget("", "")
 
 		// Assert
 		require.Error(t, err)

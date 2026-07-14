@@ -13,7 +13,7 @@
       "properties": {
         "mode": {
           "type": "string",
-          "enum": ["package", "all", "diff"]
+          "enum": ["package", "diff"]
         },
         "value": {
           "type": "string"

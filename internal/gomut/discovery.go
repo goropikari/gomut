@@ -142,13 +142,6 @@ func resolvePackages(ctx context.Context, originalRoot, root string, target resu
 		}
 
 		return packages, nil
-	case result.TargetModeAll:
-		packages, err := listPackages(ctx, root, "./...")
-		if err != nil {
-			return nil, fmt.Errorf("list packages for all target: %w", err)
-		}
-
-		return packages, nil
 	case result.TargetModeDiff:
 		files, err := DiffFiles(ctx, originalRoot, target.Value)
 		if err != nil {

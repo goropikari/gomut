@@ -55,7 +55,7 @@ gomut test ./sample
 gomut test ./sample/...
 ```
 
-### 全パッケージ
+### リポジトリ内のパッケージ
 
 ```bash
 gomut test ./...

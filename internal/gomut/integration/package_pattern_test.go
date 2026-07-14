@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"gomut/internal/gomut/result"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,6 +28,7 @@ func TestCommandRunPackagePattern(t *testing.T) {
 		require.NotEmpty(t, records)
 
 		last := records[len(records)-1]
+		assert.Equal(t, result.TargetModePackage, last.Target.Mode)
 		assert.Equal(t, "./sample/...", last.Target.Value)
 		assert.Positive(t, last.Summary.Total)
 
@@ -57,6 +60,7 @@ func TestCommandRunPackagePattern(t *testing.T) {
 		require.NotEmpty(t, records)
 
 		last := records[len(records)-1]
+		assert.Equal(t, result.TargetModePackage, last.Target.Mode)
 		assert.Equal(t, "./sample/...", last.Target.Value)
 		assert.Positive(t, last.Summary.Total)
 

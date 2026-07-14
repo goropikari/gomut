@@ -55,7 +55,7 @@ gomut test ./sample
 gomut test ./sample/...
 ```
 
-### All packages
+### Repository packages
 
 ```bash
 gomut test ./...

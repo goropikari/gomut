@@ -192,7 +192,7 @@ func (c *Command) buildTestRunConfig(cmd *cobra.Command, args ...string) (RunCon
 		return RunConfig{}, err
 	}
 
-	target, err := ResolveTarget(inputs.targetArg, false, inputs.diffRange)
+	target, err := ResolveTarget(inputs.targetArg, inputs.diffRange)
 	if err != nil {
 		return RunConfig{}, err
 	}
@@ -425,8 +425,6 @@ func applyConfigTargetMode(inputs *testRunInputs, mode result.TargetMode, value 
 		}
 
 		inputs.targetArg = *value
-	case result.TargetModeAll:
-		inputs.targetArg = "./..."
 	case result.TargetModeDiff:
 		inputs.diffRange = configDiffRange(value)
 	default:
@@ -457,15 +455,7 @@ func parseProgressMode(value string) (ProgressMode, error) {
 	}
 }
 
-func ResolveTarget(targetArg string, all bool, diffRange string) (result.Target, error) {
-	if all {
-		if targetArg != "" {
-			return result.Target{}, errors.New("use either a positional target or --diff, not both")
-		}
-
-		targetArg = "./..."
-	}
-
+func ResolveTarget(targetArg string, diffRange string) (result.Target, error) {
 	if targetArg != "" && diffRange != "" {
 		return result.Target{}, errors.New("use either a positional target or --diff, not both")
 	}
@@ -479,7 +469,7 @@ func ResolveTarget(targetArg string, all bool, diffRange string) (result.Target,
 	}
 
 	if targetArg == "./..." {
-		return result.Target{Mode: result.TargetModeAll, Value: "./..."}, nil
+		return result.Target{Mode: result.TargetModePackage, Value: "./..."}, nil
 	}
 
 	return result.Target{Mode: result.TargetModePackage, Value: targetArg}, nil
