@@ -3,7 +3,7 @@ package sample_test
 import (
 	"testing"
 
-	"gomut/sample"
+	"github.com/goropikari/gomut/sample"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

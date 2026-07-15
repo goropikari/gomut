@@ -3,10 +3,11 @@ package report
 import (
 	"encoding/json"
 	"fmt"
-	"gomut/internal/gomut/result"
 	"io"
 	"path/filepath"
 	"strings"
+
+	"github.com/goropikari/gomut/internal/gomut/result"
 )
 
 // SARIFReportData contains the metadata and records needed to render a SARIF report.
@@ -96,6 +97,7 @@ func buildSARIFLog(report SARIFReportData) sarifLog {
 
 	for _, record := range report.Records {
 		mutation := record.Mutation
+
 		level, ok := sarifLevelForResult(mutation.Result)
 		if !ok {
 			continue
@@ -180,57 +182,38 @@ func sarifLevelForResult(mutationResult result.MutationResult) (string, bool) {
 	}
 }
 
+var mutationKindDescriptions = map[result.MutationKind]string{
+	result.MutationKindComparisonOperator:   "Comparison operator mutation",
+	result.MutationKindLogicalOperator:      "Logical operator mutation",
+	result.MutationKindGuardClause:          "Guard clause mutation",
+	result.MutationKindArithmeticOperator:   "Arithmetic operator mutation",
+	result.MutationKindBitwiseOperator:      "Bitwise operator mutation",
+	result.MutationKindShiftOperator:        "Shift operator mutation",
+	result.MutationKindAssignmentArithmetic: "Assignment arithmetic mutation",
+	result.MutationKindAssignmentShift:      "Assignment shift mutation",
+	result.MutationKindControlFlow:          "Control flow mutation",
+	result.MutationKindLoopControl:          "Loop control mutation",
+	result.MutationKindAssignmentBitwise:    "Assignment bitwise mutation",
+	result.MutationKindIncDec:               "Increment/decrement mutation",
+	result.MutationKindReturn:               "Return mutation",
+	result.MutationKindNilCheck:             "Nil check mutation",
+	result.MutationKindBooleanLiteral:       "Boolean literal mutation",
+	result.MutationKindIntegerLiteral:       "Integer literal mutation",
+	result.MutationKindFloatLiteral:         "Float literal mutation",
+	result.MutationKindRuneLiteral:          "Rune literal mutation",
+	result.MutationKindUnaryNot:             "Unary not mutation",
+	result.MutationKindUnaryMinus:           "Unary minus mutation",
+	result.MutationKindUnaryBitwiseNot:      "Unary bitwise not mutation",
+	result.MutationKindSwitchCondition:      "Switch condition mutation",
+	result.MutationKindStringLiteral:        "String literal mutation",
+}
+
 func mutationKindDescription(kind result.MutationKind) string {
-	switch kind {
-	case result.MutationKindComparisonOperator:
-		return "Comparison operator mutation"
-	case result.MutationKindLogicalOperator:
-		return "Logical operator mutation"
-	case result.MutationKindGuardClause:
-		return "Guard clause mutation"
-	case result.MutationKindArithmeticOperator:
-		return "Arithmetic operator mutation"
-	case result.MutationKindBitwiseOperator:
-		return "Bitwise operator mutation"
-	case result.MutationKindShiftOperator:
-		return "Shift operator mutation"
-	case result.MutationKindAssignmentArithmetic:
-		return "Assignment arithmetic mutation"
-	case result.MutationKindAssignmentShift:
-		return "Assignment shift mutation"
-	case result.MutationKindControlFlow:
-		return "Control flow mutation"
-	case result.MutationKindLoopControl:
-		return "Loop control mutation"
-	case result.MutationKindAssignmentBitwise:
-		return "Assignment bitwise mutation"
-	case result.MutationKindIncDec:
-		return "Increment/decrement mutation"
-	case result.MutationKindReturn:
-		return "Return mutation"
-	case result.MutationKindNilCheck:
-		return "Nil check mutation"
-	case result.MutationKindBooleanLiteral:
-		return "Boolean literal mutation"
-	case result.MutationKindIntegerLiteral:
-		return "Integer literal mutation"
-	case result.MutationKindFloatLiteral:
-		return "Float literal mutation"
-	case result.MutationKindRuneLiteral:
-		return "Rune literal mutation"
-	case result.MutationKindUnaryNot:
-		return "Unary not mutation"
-	case result.MutationKindUnaryMinus:
-		return "Unary minus mutation"
-	case result.MutationKindUnaryBitwiseNot:
-		return "Unary bitwise not mutation"
-	case result.MutationKindSwitchCondition:
-		return "Switch condition mutation"
-	case result.MutationKindStringLiteral:
-		return "String literal mutation"
-	default:
-		return "Mutation"
+	if description, ok := mutationKindDescriptions[kind]; ok {
+		return description
 	}
+
+	return "Mutation"
 }
 
 func buildSARIFMessage(mutation result.MutationMetadata) string {

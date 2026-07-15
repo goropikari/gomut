@@ -3,10 +3,11 @@ package gomut
 import (
 	"context"
 	"encoding/json"
-	"gomut/internal/gomut/result"
 	"io"
 	"sync"
 	"time"
+
+	"github.com/goropikari/gomut/internal/gomut/result"
 )
 
 type ExecuteMutationFunc func(ctx context.Context, root string, candidate result.Candidate, timeout time.Duration) (result.MutationResult, string, error)

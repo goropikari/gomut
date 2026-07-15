@@ -2,11 +2,12 @@ package gomut
 
 import (
 	"context"
-	"gomut/internal/gomut/result"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/goropikari/gomut/internal/gomut/result"
 )
 
 func (r *Runner) executeMutation(ctx context.Context, root string, candidate result.Candidate, timeout time.Duration) (result.MutationResult, string, error) {

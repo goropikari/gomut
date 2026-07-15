@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	gomut "gomut/internal/gomut"
+	gomut "github.com/goropikari/gomut/internal/gomut"
 )
 
 func TestNewProgressReporter(t *testing.T) {

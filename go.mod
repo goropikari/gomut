@@ -1,4 +1,4 @@
-module gomut
+module github.com/goropikari/gomut
 
 go 1.26
 

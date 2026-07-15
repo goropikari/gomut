@@ -2,12 +2,13 @@ package report
 
 import (
 	"fmt"
-	"gomut/internal/gomut/result"
 	"html/template"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/goropikari/gomut/internal/gomut/result"
 )
 
 // HTMLReportData contains the metadata and records needed to render the HTML report.

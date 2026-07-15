@@ -1,15 +1,16 @@
 package gomut_test
 
 import (
-	"gomut/internal/gomut/result"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/goropikari/gomut/internal/gomut/result"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	gomut "gomut/internal/gomut"
+	gomut "github.com/goropikari/gomut/internal/gomut"
 )
 
 func TestDefaultConfigPath(t *testing.T) {

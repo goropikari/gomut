@@ -3,7 +3,8 @@ package gomut
 import (
 	"go/ast"
 	"go/token"
-	"gomut/internal/gomut/result"
+
+	"github.com/goropikari/gomut/internal/gomut/result"
 )
 
 type binaryMutationSpec struct {

@@ -1,4 +1,4 @@
-.PHONY: all fmt lint install install-codex install-dprint install-gitleaks install-dev-tools
+.PHONY: all fmt fix lint install install-codex install-dprint install-gitleaks install-dev-tools
 
 GOCACHE ?= /tmp/gomut-gocache
 GOLANGCI_LINT_CACHE ?= $(CURDIR)/.cache/golangci-lint
@@ -10,12 +10,14 @@ all: fmt lint
 
 fmt:
 	GOCACHE=$(GOCACHE) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) golangci-lint fmt
-	GOCACHE=$(GOCACHE) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) golangci-lint run --fix ./cmd/gomut ./internal/gomut
 	dprint fmt
+
+fix:
+	GOCACHE=$(GOCACHE) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) golangci-lint run --fix ./...
 
 lint:
 	gitleaks detect --no-banner --redact --source .
-	GOCACHE=$(GOCACHE) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) golangci-lint run ./cmd/gomut ./internal/gomut
+	GOCACHE=$(GOCACHE) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) golangci-lint run ./...
 
 install:
 	go install ./cmd/gomut

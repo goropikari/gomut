@@ -51,12 +51,15 @@ func TestCommandRunKindFilter(t *testing.T) {
 		require.NotEmpty(t, records)
 
 		seenBitwise := false
+
 		for _, record := range records {
 			assert.NotEqual(t, "return", string(record.Mutation.Kind))
+
 			if string(record.Mutation.Kind) == "bitwise_operator" {
 				seenBitwise = true
 			}
 		}
+
 		assert.True(t, seenBitwise, "expected bitwise_operator mutations to be enabled")
 	})
 
@@ -75,12 +78,15 @@ func TestCommandRunKindFilter(t *testing.T) {
 		require.NotEmpty(t, records)
 
 		seenComparison := false
+
 		for _, record := range records {
 			assert.NotEqual(t, "string_literal", string(record.Mutation.Kind))
+
 			if string(record.Mutation.Kind) == "comparison_operator" {
 				seenComparison = true
 			}
 		}
+
 		assert.True(t, seenComparison, "expected comparison_operator mutations to be included")
 	})
 
@@ -99,11 +105,13 @@ func TestCommandRunKindFilter(t *testing.T) {
 		require.NotEmpty(t, records)
 
 		seenStringLiteral := false
+
 		for _, record := range records {
 			if string(record.Mutation.Kind) == "string_literal" {
 				seenStringLiteral = true
 			}
 		}
+
 		assert.True(t, seenStringLiteral, "expected string_literal mutations to be enabled by the CLI")
 	})
 

@@ -2,10 +2,11 @@ package gomut
 
 import (
 	"fmt"
-	"gomut/internal/gomut/report"
-	"gomut/internal/gomut/result"
 	"io"
 	"os"
+
+	"github.com/goropikari/gomut/internal/gomut/report"
+	"github.com/goropikari/gomut/internal/gomut/result"
 )
 
 func (r *Runner) openCandidateOutputs(cfg RunConfig) (io.Writer, io.Writer, io.Writer, func(), error) {

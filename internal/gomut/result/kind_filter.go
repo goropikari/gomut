@@ -99,7 +99,9 @@ func parseMutationKinds(mode string, enable, disable []string) (map[MutationKind
 
 	disableKinds, invalidDisable := parseMutationKindList(disable)
 
-	invalid := append(invalidEnable, invalidDisable...)
+	invalid := append([]string(nil), invalidEnable...)
+	invalid = append(invalid, invalidDisable...)
+
 	if len(invalid) > 0 {
 		return nil, fmt.Errorf(
 			"unknown mutation kind%s: %s (available: %s)",

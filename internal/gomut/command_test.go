@@ -2,16 +2,17 @@ package gomut_test
 
 import (
 	"encoding/json"
-	"gomut/internal/gomut/result"
 	"os"
 	"path/filepath"
 	"strconv"
 	"testing"
 
+	"github.com/goropikari/gomut/internal/gomut/result"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	gomut "gomut/internal/gomut"
+	gomut "github.com/goropikari/gomut/internal/gomut"
 )
 
 func TestResolveTarget(t *testing.T) {

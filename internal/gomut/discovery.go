@@ -8,13 +8,14 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"gomut/internal/gomut/result"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/goropikari/gomut/internal/gomut/result"
 )
 
 func DiscoverCandidates(root string, packages []string, target result.Target, coverage map[string]result.FileCoverage) ([]result.Candidate, error) {

@@ -5,12 +5,13 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"gomut/internal/gomut/result"
 	"os"
 	pathpkg "path"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/goropikari/gomut/internal/gomut/result"
 )
 
 // ExclusionNotice describes a skipped file or candidate together with the

@@ -2,13 +2,14 @@ package report_test
 
 import (
 	"bytes"
-	"gomut/internal/gomut/report"
-	"gomut/internal/gomut/result"
 	"html"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/goropikari/gomut/internal/gomut/report"
+	"github.com/goropikari/gomut/internal/gomut/result"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

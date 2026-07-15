@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gomut/internal/gomut/result"
 	"io"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/goropikari/gomut/internal/gomut/result"
 )
 
 type Runner struct {

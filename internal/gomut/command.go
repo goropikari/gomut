@@ -2,10 +2,11 @@ package gomut
 
 import (
 	"context"
-	"gomut/internal/gomut/result"
 	"io"
 	"strings"
 	"time"
+
+	"github.com/goropikari/gomut/internal/gomut/result"
 
 	"github.com/spf13/cobra"
 )

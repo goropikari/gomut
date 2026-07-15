@@ -2,11 +2,12 @@ package gomut_test
 
 import (
 	"context"
-	"gomut/internal/gomut"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/goropikari/gomut/internal/gomut"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"gomut/internal/gomut"
 	"os"
+
+	"github.com/goropikari/gomut/internal/gomut"
 )
 
 func main() {

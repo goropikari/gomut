@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"gomut/internal/gomut/result"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/goropikari/gomut/internal/gomut/result"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"

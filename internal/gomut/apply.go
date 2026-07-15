@@ -2,9 +2,10 @@ package gomut
 
 import (
 	"fmt"
-	"gomut/internal/gomut/result"
 	"os"
 	"path/filepath"
+
+	"github.com/goropikari/gomut/internal/gomut/result"
 )
 
 func ApplyMutation(root string, candidate result.Candidate) ([]byte, error) {

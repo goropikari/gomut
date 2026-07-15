@@ -31,7 +31,7 @@ func TestCommandRunSARIFOutput(t *testing.T) {
 		assert.NotEmpty(t, first.Level)
 		assert.NotEmpty(t, first.Locations)
 		assert.Equal(t, "sample/sample.go", first.Locations[0].PhysicalLocation.ArtifactLocation.URI)
-		assert.Greater(t, first.Locations[0].PhysicalLocation.Region.StartLine, 0)
+		assert.Positive(t, first.Locations[0].PhysicalLocation.Region.StartLine)
 	})
 
 	t.Run("given sarif output with a file path, it writes the report to that file", func(t *testing.T) {

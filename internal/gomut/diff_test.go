@@ -2,16 +2,17 @@ package gomut_test
 
 import (
 	"context"
-	"gomut/internal/gomut/result"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 
+	"github.com/goropikari/gomut/internal/gomut/result"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	gomut "gomut/internal/gomut"
+	gomut "github.com/goropikari/gomut/internal/gomut"
 )
 
 func TestNormalizeDiffRange(t *testing.T) {

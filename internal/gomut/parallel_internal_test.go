@@ -5,13 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gomut/internal/gomut/result"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/goropikari/gomut/internal/gomut/result"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
