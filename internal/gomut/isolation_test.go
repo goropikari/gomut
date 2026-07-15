@@ -20,6 +20,10 @@ func TestPrepareRunRoot(t *testing.T) {
 		require.NoError(t, os.WriteFile(filepath.Join(root, "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o600))
 		require.NoError(t, os.MkdirAll(filepath.Join(root, ".git"), 0o755))
 		require.NoError(t, os.WriteFile(filepath.Join(root, ".git", "HEAD"), []byte("ref: refs/heads/main\n"), 0o600))
+		require.NoError(t, os.MkdirAll(filepath.Join(root, ".agents"), 0o555))
+		require.NoError(t, os.MkdirAll(filepath.Join(root, ".cache"), 0o755))
+		require.NoError(t, os.MkdirAll(filepath.Join(root, ".codex"), 0o555))
+		require.NoError(t, os.MkdirAll(filepath.Join(root, ".worktree"), 0o755))
 
 		// Act
 		runRoot, cleanup, err := gomut.PrepareRunRoot(context.Background(), root, io.Discard)
@@ -33,6 +37,18 @@ func TestPrepareRunRoot(t *testing.T) {
 		assert.Equal(t, "package main\n\nfunc main() {}\n", string(copied))
 
 		_, err = os.Stat(filepath.Join(runRoot, ".git"))
+		require.ErrorIs(t, err, os.ErrNotExist)
+
+		_, err = os.Stat(filepath.Join(runRoot, ".agents"))
+		require.ErrorIs(t, err, os.ErrNotExist)
+
+		_, err = os.Stat(filepath.Join(runRoot, ".cache"))
+		require.ErrorIs(t, err, os.ErrNotExist)
+
+		_, err = os.Stat(filepath.Join(runRoot, ".codex"))
+		require.ErrorIs(t, err, os.ErrNotExist)
+
+		_, err = os.Stat(filepath.Join(runRoot, ".worktree"))
 		require.ErrorIs(t, err, os.ErrNotExist)
 
 		require.NoError(t, os.WriteFile(filepath.Join(runRoot, "main.go"), []byte("package main\n\nvar mutated = true\n"), 0o600))

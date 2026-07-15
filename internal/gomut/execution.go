@@ -52,8 +52,10 @@ func (e Executor) runSequential(ctx context.Context, candidates []result.Candida
 	records := make([]result.Record, 0, len(candidates))
 	completed := 0
 
+	var mutationRoot string
+
 	for _, candidate := range candidates {
-		record, mutationResult, err := e.processCandidate(ctx, candidate, startedAt, command)
+		record, mutationResult, err := e.processSequentialCandidate(ctx, candidate, startedAt, command, &mutationRoot)
 		if err != nil {
 			e.reportError(candidate, err)
 
@@ -83,6 +85,19 @@ func (e Executor) runSequential(ctx context.Context, candidates []result.Candida
 	}
 
 	return summary, records, nil
+}
+
+func (e Executor) processSequentialCandidate(ctx context.Context, candidate result.Candidate, startedAt, command string, mutationRoot *string) (result.Record, result.MutationResult, error) {
+	if !candidate.Covered {
+		record := buildRecord(e.cfg.Target, startedAt, command, candidate, result.MutationResultNotCovered, "line not covered by baseline tests")
+		return record, result.MutationResultNotCovered, nil
+	}
+
+	if *mutationRoot == "" {
+		*mutationRoot = e.cfg.Root
+	}
+
+	return e.executeMutation(ctx, *mutationRoot, candidate, startedAt, command)
 }
 
 func (e Executor) runParallel(ctx context.Context, candidates []result.Candidate, startedAt, command string, jsonlWriter io.Writer, progress ProgressReporter) (result.Summary, []result.Record, error) {
@@ -226,23 +241,6 @@ func (e Executor) finalizeParallelCandidateOutcomes(jsonlWriter io.Writer, order
 	}
 
 	return summary, records, nil
-}
-
-func (e Executor) processCandidate(ctx context.Context, candidate result.Candidate, startedAt, command string) (result.Record, result.MutationResult, error) {
-	if !candidate.Covered {
-		record := buildRecord(e.cfg.Target, startedAt, command, candidate, result.MutationResultNotCovered, "line not covered by baseline tests")
-		return record, result.MutationResultNotCovered, nil
-	}
-
-	candidateRoot, cleanup, err := e.cfg.PrepareMutationRoot(ctx, e.cfg.Root)
-	if err != nil {
-		return result.Record{}, "", err
-	}
-	defer func() {
-		_ = cleanup()
-	}()
-
-	return e.executeMutation(ctx, candidateRoot, candidate, startedAt, command)
 }
 
 func (e Executor) executeMutation(ctx context.Context, root string, candidate result.Candidate, startedAt, command string) (result.Record, result.MutationResult, error) {

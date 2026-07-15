@@ -3,13 +3,45 @@ package gomut
 import (
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func goCommandEnv() []string {
 	cacheDir := filepath.Join(os.TempDir(), "gomut-gocache")
 	_ = os.MkdirAll(cacheDir, 0o755)
 
-	return append(os.Environ(), "GOCACHE="+cacheDir)
+	env := upsertEnv(os.Environ(), "GOCACHE", cacheDir)
+
+	goFlags := os.Getenv("GOFLAGS")
+	if !hasBuildVCSFlag(goFlags) {
+		goFlags = strings.TrimSpace(goFlags + " -buildvcs=false")
+	}
+
+	return upsertEnv(env, "GOFLAGS", goFlags)
+}
+
+func upsertEnv(env []string, key, value string) []string {
+	prefix := key + "="
+	entry := prefix + value
+
+	for i, item := range env {
+		if strings.HasPrefix(item, prefix) {
+			env[i] = entry
+			return env
+		}
+	}
+
+	return append(env, entry)
+}
+
+func hasBuildVCSFlag(value string) bool {
+	for _, field := range strings.Fields(value) {
+		if field == "-buildvcs" || strings.HasPrefix(field, "-buildvcs=") {
+			return true
+		}
+	}
+
+	return false
 }
 
 func packageForFile(root, file string) (string, error) {

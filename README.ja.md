@@ -157,7 +157,13 @@ exclude:
   - "*.pb.go"
   - "*_mock.go"
   - internal/generated
+isolation:
+  copy_exclude:
+    - tmp
+    - internal/cache/**
 ```
+
+`exclude` は mutation 候補を除外します。`isolation.copy_exclude` は gomut が隔離用の一時リポジトリコピーを作るときに、ファイルまたはディレクトリをコピー対象から除外します。entry 名、リポジトリ相対パス、glob パターンを指定できます。
 
 JSON Schema は [docs/gomut-config.schema.json](docs/gomut-config.schema.json) を参照してください。
 

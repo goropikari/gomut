@@ -49,6 +49,10 @@ kind:
 parallel: 3
 exclude:
   - internal/generated
+isolation:
+  copy_exclude:
+    - tmp
+    - internal/cache/**
 baseline:
   input: baseline-in.jsonl
   output: baseline-out.jsonl
@@ -82,6 +86,8 @@ baseline:
 		require.NotNil(t, cfg.Parallel)
 		assert.Equal(t, 3, *cfg.Parallel)
 		assert.Equal(t, []string{"internal/generated"}, cfg.Exclude)
+		require.NotNil(t, cfg.Isolation)
+		assert.Equal(t, []string{"tmp", "internal/cache/**"}, []string(cfg.Isolation.CopyExclude))
 		require.NotNil(t, cfg.Baseline)
 		require.NotNil(t, cfg.Baseline.Input)
 		require.NotNil(t, cfg.Baseline.Output)

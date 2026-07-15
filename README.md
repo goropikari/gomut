@@ -157,7 +157,13 @@ exclude:
   - "*.pb.go"
   - "*_mock.go"
   - internal/generated
+isolation:
+  copy_exclude:
+    - tmp
+    - internal/cache/**
 ```
+
+`exclude` skips mutation candidates. `isolation.copy_exclude` skips files or directories when gomut creates isolated temporary repository copies. It accepts entry names, repository-relative paths, and glob patterns.
 
 See [docs/gomut-config.schema.json](docs/gomut-config.schema.json) for the JSON Schema.
 

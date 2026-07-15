@@ -85,6 +85,23 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, cfg.Verbose)
 	})
+
+	t.Run("given isolation copy excludes in config, it propagates them to the run config", func(t *testing.T) {
+		// Arrange
+		root := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(root, ".gomut.yaml"), []byte("isolation:\n  copy_exclude:\n    - tmp\n    - internal/cache/**\n"), 0o600))
+		t.Chdir(root)
+
+		command := NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
+		cmd := command.newTestCommand()
+
+		// Act
+		cfg, err := command.buildTestRunConfig(cmd, "./sample")
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, []string{"tmp", "internal/cache/**"}, cfg.IsolationCopyExclude)
+	})
 }
 
 func TestRunnerRunCandidateLoopParallel(t *testing.T) {
@@ -158,6 +175,49 @@ func TestRunnerRunCandidateLoopParallel(t *testing.T) {
 			assert.Equal(t, records[i].Mutation.File, record.Mutation.File)
 			assert.Equal(t, records[i].Summary.Total, record.Summary.Total)
 		}
+	})
+}
+
+func TestExecutorRun(t *testing.T) {
+	t.Run("given sequential covered candidates, it reuses the run root", func(t *testing.T) {
+		// Arrange
+		root := t.TempDir()
+
+		var (
+			prepared      int
+			executedRoots []string
+		)
+
+		candidates := parallelCandidates()
+		candidates[1].Covered = false
+
+		executor := NewExecutor(ExecutorConfig{
+			Root:     root,
+			Timeout:  time.Second,
+			Parallel: 1,
+			Target:   result.Target{Mode: result.TargetModePackage, Value: "./sample"},
+			ExecuteMutation: func(ctx context.Context, root string, candidate result.Candidate, timeout time.Duration) (result.MutationResult, string, error) {
+				executedRoots = append(executedRoots, root)
+				return result.MutationResultKilled, "killed", nil
+			},
+			PrepareMutationRoot: func(ctx context.Context, root string) (string, func() error, error) {
+				prepared++
+				return filepath.Join(root, "mutation-root"), func() error { return nil }, nil
+			},
+		})
+
+		// Act
+		summary, records, err := executor.Run(context.Background(), candidates, "2026-07-12T00:00:00Z", "gomut test --parallel 1", nil, nil)
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, 0, prepared)
+		assert.Equal(t, []string{root, root}, executedRoots)
+		assert.Equal(t, 3, summary.Total)
+		assert.Equal(t, 2, summary.Killed)
+		assert.Equal(t, 1, summary.NotCovered)
+		require.Len(t, records, 3)
+		assert.Equal(t, result.MutationResultNotCovered, records[1].Mutation.Result)
 	})
 }
 
