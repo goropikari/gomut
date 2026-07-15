@@ -66,6 +66,9 @@
     "html": {
       "type": "string"
     },
+    "sarif": {
+      "type": "string"
+    },
     "type": {
       "type": "array",
       "items": {

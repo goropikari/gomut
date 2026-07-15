@@ -81,7 +81,7 @@ func (r *Runner) discoverCandidates(ctx context.Context, originalRoot, root stri
 }
 
 func (r *Runner) runCandidates(ctx context.Context, root string, cfg RunConfig, candidates []result.Candidate) error {
-	jsonlWriter, htmlWriter, cleanup, err := r.openCandidateOutputs(cfg)
+	jsonlWriter, htmlWriter, sarifWriter, cleanup, err := r.openCandidateOutputs(cfg)
 	if err != nil {
 		return err
 	}
@@ -111,6 +111,10 @@ func (r *Runner) runCandidates(ctx context.Context, root string, cfg RunConfig, 
 	progress.Finish()
 
 	if err := r.writeCandidateHTML(root, cfg, htmlWriter, startedAt, command, summary, records); err != nil {
+		return err
+	}
+
+	if err := r.writeCandidateSARIF(cfg, sarifWriter, startedAt, command, summary, records); err != nil {
 		return err
 	}
 

@@ -3,13 +3,17 @@ target:
   value: ./sample
 kind:
   mode: standard
-  enable:
-    - bitwise_operator
-  disable:
-    - return
+type:
+  - lived
+  - not-covered
+#  enable:
+#    - bitwise_operator
+#  disable:
+#    - return
 progress: on
 jsonl: mutations.jsonl
 html: report.html
+sarif: report.sarif
 isolation:
   copy_exclude:
     - .codex
@@ -18,4 +22,5 @@ isolation:
     - internal/cache/**
     - mutations.jsonl
     - report.html
+    - report.sarif
     - tmp

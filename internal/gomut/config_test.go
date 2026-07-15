@@ -37,6 +37,7 @@ timeout: 15s
 progress: on
 jsonl: mutations.jsonl
 html: report.html
+sarif: report.sarif
 type:
   - lived
 kind:
@@ -76,6 +77,8 @@ baseline:
 		assert.Equal(t, "mutations.jsonl", *cfg.JSONL)
 		require.NotNil(t, cfg.HTML)
 		assert.Equal(t, "report.html", *cfg.HTML)
+		require.NotNil(t, cfg.SARIF)
+		assert.Equal(t, "report.sarif", *cfg.SARIF)
 		require.Len(t, cfg.Type, 1)
 		assert.Equal(t, "lived", cfg.Type[0])
 		require.NotNil(t, cfg.Kind)

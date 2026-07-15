@@ -28,6 +28,10 @@ func TestCommandRunConfig(t *testing.T) {
 		records := decodeJSONLRecords(t, mustReadFile(t, jsonlPath))
 		require.NotEmpty(t, records)
 		assert.Equal(t, "./sample", records[0].Target.Value)
+
+		sarifData, sarifReadErr := os.ReadFile(filepath.Join(root, "default-config.sarif"))
+		require.NoError(t, sarifReadErr)
+		assert.Contains(t, string(sarifData), `"version": "2.1.0"`)
 	})
 
 	t.Run("given an explicit config file path, it loads settings from that file", func(t *testing.T) {
@@ -46,6 +50,10 @@ func TestCommandRunConfig(t *testing.T) {
 		records := decodeJSONLRecords(t, mustReadFile(t, jsonlPath))
 		require.NotEmpty(t, records)
 		assert.Equal(t, "./alt", records[0].Target.Value)
+
+		sarifData, sarifReadErr := os.ReadFile(filepath.Join(root, "explicit-config.sarif"))
+		require.NoError(t, sarifReadErr)
+		assert.Contains(t, string(sarifData), `"version": "2.1.0"`)
 	})
 
 	t.Run("given config values and overriding CLI flags, it uses the flags", func(t *testing.T) {
@@ -145,6 +153,7 @@ func createConfigFixture(t *testing.T) string {
 timeout: 10s
 progress: on
 jsonl: default-config.jsonl
+sarif: default-config.sarif
 `), 0o600))
 	require.NoError(t, os.WriteFile(filepath.Join(root, "configs", "gomut.yaml"), []byte(`target:
   mode: package
@@ -152,6 +161,7 @@ jsonl: default-config.jsonl
 timeout: 20s
 progress: off
 jsonl: explicit-config.jsonl
+sarif: explicit-config.sarif
 `), 0o600))
 
 	return root

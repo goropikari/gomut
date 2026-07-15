@@ -104,7 +104,7 @@ func TestApplyMutation(t *testing.T) {
 func TestNormalizeTestArgs(t *testing.T) {
 	t.Run("given jsonl without a value, it keeps stdout output", func(t *testing.T) {
 		// Arrange
-		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--jsonl"})
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, sarifOutput, sarifEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--jsonl"})
 
 		// Assert
 		require.NoError(t, err)
@@ -113,11 +113,13 @@ func TestNormalizeTestArgs(t *testing.T) {
 		assert.True(t, jsonlEnabled)
 		assert.Empty(t, htmlOutput)
 		assert.False(t, htmlEnabled)
+		assert.Empty(t, sarifOutput)
+		assert.False(t, sarifEnabled)
 	})
 
 	t.Run("given jsonl with a value, it captures the file path", func(t *testing.T) {
 		// Arrange
-		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--jsonl", "mutations.jsonl"})
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, sarifOutput, sarifEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--jsonl", "mutations.jsonl"})
 
 		// Assert
 		require.NoError(t, err)
@@ -126,11 +128,13 @@ func TestNormalizeTestArgs(t *testing.T) {
 		assert.True(t, jsonlEnabled)
 		assert.Empty(t, htmlOutput)
 		assert.False(t, htmlEnabled)
+		assert.Empty(t, sarifOutput)
+		assert.False(t, sarifEnabled)
 	})
 
 	t.Run("given jsonl equals syntax, it captures the file path", func(t *testing.T) {
 		// Arrange
-		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--jsonl=mutations.jsonl"})
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, sarifOutput, sarifEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--jsonl=mutations.jsonl"})
 
 		// Assert
 		require.NoError(t, err)
@@ -139,11 +143,13 @@ func TestNormalizeTestArgs(t *testing.T) {
 		assert.True(t, jsonlEnabled)
 		assert.Empty(t, htmlOutput)
 		assert.False(t, htmlEnabled)
+		assert.Empty(t, sarifOutput)
+		assert.False(t, sarifEnabled)
 	})
 
 	t.Run("given short jsonl syntax, it captures the file path", func(t *testing.T) {
 		// Arrange
-		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "-jsonl", "mutations.jsonl"})
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, sarifOutput, sarifEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "-jsonl", "mutations.jsonl"})
 
 		// Assert
 		require.NoError(t, err)
@@ -152,11 +158,13 @@ func TestNormalizeTestArgs(t *testing.T) {
 		assert.True(t, jsonlEnabled)
 		assert.Empty(t, htmlOutput)
 		assert.False(t, htmlEnabled)
+		assert.Empty(t, sarifOutput)
+		assert.False(t, sarifEnabled)
 	})
 
 	t.Run("given html without a value, it keeps stdout output", func(t *testing.T) {
 		// Arrange
-		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--html"})
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, sarifOutput, sarifEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--html"})
 
 		// Assert
 		require.NoError(t, err)
@@ -165,11 +173,13 @@ func TestNormalizeTestArgs(t *testing.T) {
 		assert.False(t, jsonlEnabled)
 		assert.Empty(t, htmlOutput)
 		assert.True(t, htmlEnabled)
+		assert.Empty(t, sarifOutput)
+		assert.False(t, sarifEnabled)
 	})
 
 	t.Run("given html with a value, it captures the file path", func(t *testing.T) {
 		// Arrange
-		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--html", "report.html"})
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, sarifOutput, sarifEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--html", "report.html"})
 
 		// Assert
 		require.NoError(t, err)
@@ -178,11 +188,13 @@ func TestNormalizeTestArgs(t *testing.T) {
 		assert.False(t, jsonlEnabled)
 		assert.Equal(t, "report.html", htmlOutput)
 		assert.True(t, htmlEnabled)
+		assert.Empty(t, sarifOutput)
+		assert.False(t, sarifEnabled)
 	})
 
 	t.Run("given short html syntax, it captures the file path", func(t *testing.T) {
 		// Arrange
-		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "-html", "report.html"})
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, sarifOutput, sarifEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "-html", "report.html"})
 
 		// Assert
 		require.NoError(t, err)
@@ -191,11 +203,13 @@ func TestNormalizeTestArgs(t *testing.T) {
 		assert.False(t, jsonlEnabled)
 		assert.Equal(t, "report.html", htmlOutput)
 		assert.True(t, htmlEnabled)
+		assert.Empty(t, sarifOutput)
+		assert.False(t, sarifEnabled)
 	})
 
 	t.Run("given both jsonl and html outputs, it captures both file paths", func(t *testing.T) {
 		// Arrange
-		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--jsonl", "mutations.jsonl", "--html", "report.html"})
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, sarifOutput, sarifEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--jsonl", "mutations.jsonl", "--html", "report.html"})
 
 		// Assert
 		require.NoError(t, err)
@@ -204,6 +218,83 @@ func TestNormalizeTestArgs(t *testing.T) {
 		assert.True(t, jsonlEnabled)
 		assert.Equal(t, "report.html", htmlOutput)
 		assert.True(t, htmlEnabled)
+		assert.Empty(t, sarifOutput)
+		assert.False(t, sarifEnabled)
+	})
+
+	t.Run("given sarif without a value, it keeps stdout output", func(t *testing.T) {
+		// Arrange
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, sarifOutput, sarifEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--sarif"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, []string{"./internal/gomut"}, args)
+		assert.Empty(t, jsonlOutput)
+		assert.False(t, jsonlEnabled)
+		assert.Empty(t, htmlOutput)
+		assert.False(t, htmlEnabled)
+		assert.Empty(t, sarifOutput)
+		assert.True(t, sarifEnabled)
+	})
+
+	t.Run("given sarif with a value, it captures the file path", func(t *testing.T) {
+		// Arrange
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, sarifOutput, sarifEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--sarif", "report.sarif"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, []string{"./internal/gomut"}, args)
+		assert.Empty(t, jsonlOutput)
+		assert.False(t, jsonlEnabled)
+		assert.Empty(t, htmlOutput)
+		assert.False(t, htmlEnabled)
+		assert.Equal(t, "report.sarif", sarifOutput)
+		assert.True(t, sarifEnabled)
+	})
+
+	t.Run("given short sarif syntax, it captures the file path", func(t *testing.T) {
+		// Arrange
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, sarifOutput, sarifEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "-sarif", "report.sarif"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, []string{"./internal/gomut"}, args)
+		assert.Empty(t, jsonlOutput)
+		assert.False(t, jsonlEnabled)
+		assert.Empty(t, htmlOutput)
+		assert.False(t, htmlEnabled)
+		assert.Equal(t, "report.sarif", sarifOutput)
+		assert.True(t, sarifEnabled)
+	})
+
+	t.Run("given sarif equals syntax, it captures the file path", func(t *testing.T) {
+		// Arrange
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, sarifOutput, sarifEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "--sarif=report.sarif"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, []string{"./internal/gomut"}, args)
+		assert.Empty(t, jsonlOutput)
+		assert.False(t, jsonlEnabled)
+		assert.Empty(t, htmlOutput)
+		assert.False(t, htmlEnabled)
+		assert.Equal(t, "report.sarif", sarifOutput)
+		assert.True(t, sarifEnabled)
+	})
+
+	t.Run("given short sarif equals syntax, it captures the file path", func(t *testing.T) {
+		// Arrange
+		args, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, sarifOutput, sarifEnabled, err := gomut.NormalizeTestArgs([]string{"./internal/gomut", "-sarif=report.sarif"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, []string{"./internal/gomut"}, args)
+		assert.Empty(t, jsonlOutput)
+		assert.False(t, jsonlEnabled)
+		assert.Empty(t, htmlOutput)
+		assert.False(t, htmlEnabled)
+		assert.Equal(t, "report.sarif", sarifOutput)
+		assert.True(t, sarifEnabled)
 	})
 }
 

@@ -24,6 +24,7 @@
 - `--mode` / `--enable` / `--disable` で mutation 種別を絞り込み
 - 結果を JSON Lines 形式で出力
 - HTML レポートを任意で生成
+- IDE 連携向けに SARIF レポートを生成
 
 ## インストール
 
@@ -99,6 +100,16 @@ gomut test ./internal/gomut --html report.html
 gomut test ./internal/gomut --jsonl mutations.jsonl --html report.html
 ```
 
+### SARIF 出力
+
+```bash
+gomut test ./internal/gomut --sarif
+gomut test ./internal/gomut --sarif gomut.sarif
+gomut test ./internal/gomut --jsonl mutations.jsonl --sarif gomut.sarif
+```
+
+Neovim で使う場合は、SARIF を読めるプラグインや importer に生成ファイルを渡すと、`LIVED` の mutation を診断として表示できます。
+
 ### タイムアウト
 
 各 mutation の実行には個別のタイムアウトがあり、デフォルトは `10s` です。
@@ -147,6 +158,9 @@ progress: on
 parallel: 4
 jsonl: mutations.jsonl
 html: report.html
+sarif: report.sarif
+type:
+  - lived
 kind:
   mode: standard
   enable:
@@ -176,6 +190,9 @@ JSON Lines はデフォルトで `stdout` に出ます。
 - `--html` だけを指定した場合は HTML レポートを `stdout` に出力
 - `--html <path>` を指定した場合はそのファイルに出力
 - `--html <path>` を指定して `--jsonl` を付けない場合、JSONL 出力は抑止される
+- `--sarif` だけを指定した場合は SARIF レポートを `stdout` に出力
+- `--sarif <path>` を指定した場合はそのファイルに出力
+- 複数の path なしの機械可読出力を同時に要求した場合、`stdout` を使えるのは 1 つだけです。残りはファイル path を指定してください
 - `--progress=auto|on|off` で mutation の進捗表示を `stderr` に出すか制御できる
 - `--progress` の既定値は `auto` で、対話的な端末では進捗を表示し、非 TTY や CI では静かに動作する
 - `--mode` は基本となる mutation kind の集合を選ぶ (`standard` または `all`)
