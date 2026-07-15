@@ -27,7 +27,7 @@ func (r *Runner) Run(ctx context.Context, cfg RunConfig) (err error) {
 		return err
 	}
 
-	root, cleanup, err := prepareRunRoot(ctx, originalRoot, r.stderr)
+	root, cleanup, err := prepareRunRoot(ctx, originalRoot, r.stderr, cfg.IsolationCopyExclude)
 	if err != nil {
 		return err
 	}

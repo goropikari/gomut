@@ -2,6 +2,8 @@ package gomut
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -160,40 +162,42 @@ func resolvePackages(ctx context.Context, originalRoot, root string, target resu
 }
 
 func runBaseline(ctx context.Context, root string, packages []string) (map[string]result.FileCoverage, error) {
-	merged := map[string]result.FileCoverage{}
-
 	modulePath, err := modulePath(root)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, pkg := range packages {
-		coverProfile := filepath.Join(os.TempDir(), strings.ReplaceAll("gomut-"+strings.ReplaceAll(pkg, "/", "-"), "...", "all")+".cover")
-		cmd := exec.CommandContext(ctx, "go", "test", "-coverprofile", coverProfile, pkg)
-		cmd.Dir = root
-		cmd.Env = goCommandEnv()
+	coverProfilePath := baselineCoverProfilePath(packages)
+	args := append([]string{"test", "-coverprofile", coverProfilePath}, packages...)
+	cmd := exec.CommandContext(ctx, "go", args...)
+	cmd.Dir = root
+	cmd.Env = goCommandEnv()
 
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			return nil, fmt.Errorf("baseline go test failed for %s: %w\n%s", pkg, err, string(out))
-		}
-
-		coverage, err := readCoverage(root, coverProfile, modulePath)
-		if err != nil {
-			return nil, err
-		}
-
-		for file, cov := range coverage {
-			merged[file] = mergeCoverage(merged[file], cov)
-		}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("baseline go test failed: %w\n%s", err, string(out))
 	}
 
-	return merged, nil
+	coverage, err := readCoverage(root, coverProfilePath, modulePath)
+	if err != nil {
+		return nil, err
+	}
+
+	return coverage, nil
 }
 
-func mergeCoverage(dst, src result.FileCoverage) result.FileCoverage {
-	dst.Ranges = append(dst.Ranges, src.Ranges...)
-	return dst
+func baselineCoverProfilePath(packages []string) string {
+	if len(packages) == 1 {
+		name := strings.ReplaceAll("gomut-"+strings.ReplaceAll(packages[0], "/", "-"), "...", "all") + ".cover"
+		return filepath.Join(os.TempDir(), name)
+	}
+
+	return filepath.Join(os.TempDir(), "gomut-baseline-"+baselineCoverProfileHash(packages)+".cover")
+}
+
+func baselineCoverProfileHash(packages []string) string {
+	hash := sha256.Sum256([]byte(strings.Join(packages, "\x00")))
+	return hex.EncodeToString(hash[:])
 }
 
 func listPackages(ctx context.Context, root, pattern string) ([]string, error) {

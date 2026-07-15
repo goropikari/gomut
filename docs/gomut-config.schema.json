@@ -102,6 +102,25 @@
         "type": "string"
       }
     },
+    "isolation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "copy_exclude": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      }
+    },
     "baseline": {
       "type": "object",
       "additionalProperties": false,

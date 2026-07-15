@@ -19,16 +19,17 @@ const DefaultConfigFileName = ".gomut.yaml"
 
 // Config represents gomut settings loaded from a YAML config file.
 type Config struct {
-	Target   *ConfigTarget   `yaml:"target,omitempty"`
-	Timeout  *string         `yaml:"timeout,omitempty"`
-	Progress *string         `yaml:"progress,omitempty"`
-	JSONL    *string         `yaml:"jsonl,omitempty"`
-	HTML     *string         `yaml:"html,omitempty"`
-	Type     []string        `yaml:"type,omitempty"`
-	Kind     *KindConfig     `yaml:"kind,omitempty"`
-	Parallel *int            `yaml:"parallel,omitempty"`
-	Exclude  []string        `yaml:"exclude,omitempty"`
-	Baseline *BaselineConfig `yaml:"baseline,omitempty"`
+	Target    *ConfigTarget    `yaml:"target,omitempty"`
+	Timeout   *string          `yaml:"timeout,omitempty"`
+	Progress  *string          `yaml:"progress,omitempty"`
+	JSONL     *string          `yaml:"jsonl,omitempty"`
+	HTML      *string          `yaml:"html,omitempty"`
+	Type      []string         `yaml:"type,omitempty"`
+	Kind      *KindConfig      `yaml:"kind,omitempty"`
+	Parallel  *int             `yaml:"parallel,omitempty"`
+	Exclude   []string         `yaml:"exclude,omitempty"`
+	Isolation *IsolationConfig `yaml:"isolation,omitempty"`
+	Baseline  *BaselineConfig  `yaml:"baseline,omitempty"`
 }
 
 type yamlStringList []string
@@ -80,20 +81,26 @@ type BaselineConfig struct {
 	Output *string `yaml:"output,omitempty"`
 }
 
+// IsolationConfig represents temporary repository copy settings.
+type IsolationConfig struct {
+	CopyExclude yamlStringList `yaml:"copy_exclude,omitempty"`
+}
+
 // RunConfig captures the resolved runtime settings used by the mutation runner.
 type RunConfig struct {
-	Target       result.Target
-	Timeout      time.Duration
-	Parallel     int
-	Exclude      []string
-	KindFilter   result.MutationKindFilter
-	OutputPath   string
-	JSONLEnabled bool
-	HTMLPath     string
-	HTMLEnabled  bool
-	ProgressMode ProgressMode
-	ResultFilter result.MutationResultFilter
-	Verbose      bool
+	Target               result.Target
+	Timeout              time.Duration
+	Parallel             int
+	Exclude              []string
+	IsolationCopyExclude []string
+	KindFilter           result.MutationKindFilter
+	OutputPath           string
+	JSONLEnabled         bool
+	HTMLPath             string
+	HTMLEnabled          bool
+	ProgressMode         ProgressMode
+	ResultFilter         result.MutationResultFilter
+	Verbose              bool
 }
 
 type testRunInputs struct {
@@ -203,18 +210,19 @@ func (c *Command) buildTestRunConfig(cmd *cobra.Command, args ...string) (RunCon
 	}
 
 	return RunConfig{
-		Target:       target,
-		Timeout:      inputs.timeout,
-		Parallel:     inputs.parallel,
-		Exclude:      append([]string(nil), inputs.config.Exclude...),
-		KindFilter:   kindFilter,
-		OutputPath:   inputs.jsonlOutput,
-		JSONLEnabled: inputs.jsonlEnabled,
-		HTMLPath:     inputs.htmlOutput,
-		HTMLEnabled:  inputs.htmlEnabled,
-		ProgressMode: progressMode,
-		ResultFilter: resultFilter,
-		Verbose:      inputs.verbose,
+		Target:               target,
+		Timeout:              inputs.timeout,
+		Parallel:             inputs.parallel,
+		Exclude:              append([]string(nil), inputs.config.Exclude...),
+		IsolationCopyExclude: isolationCopyExclude(inputs.config),
+		KindFilter:           kindFilter,
+		OutputPath:           inputs.jsonlOutput,
+		JSONLEnabled:         inputs.jsonlEnabled,
+		HTMLPath:             inputs.htmlOutput,
+		HTMLEnabled:          inputs.htmlEnabled,
+		ProgressMode:         progressMode,
+		ResultFilter:         resultFilter,
+		Verbose:              inputs.verbose,
 	}, nil
 }
 
@@ -415,6 +423,14 @@ func (c *Command) applyOutputConfigDefaults(inputs *testRunInputs) {
 		inputs.htmlOutput = *inputs.config.HTML
 		inputs.htmlEnabled = true
 	}
+}
+
+func isolationCopyExclude(cfg Config) []string {
+	if cfg.Isolation == nil {
+		return nil
+	}
+
+	return append([]string(nil), cfg.Isolation.CopyExclude...)
 }
 
 func applyConfigTargetMode(inputs *testRunInputs, mode result.TargetMode, value *string) error {

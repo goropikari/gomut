@@ -10,3 +10,12 @@ kind:
 progress: on
 jsonl: mutations.jsonl
 html: report.html
+isolation:
+  copy_exclude:
+    - .codex
+    - .worktrees
+    - docs
+    - internal/cache/**
+    - mutations.jsonl
+    - report.html
+    - tmp
