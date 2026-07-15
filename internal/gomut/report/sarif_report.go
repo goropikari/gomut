@@ -3,11 +3,10 @@ package report
 import (
 	"encoding/json"
 	"fmt"
+	"gomut/internal/gomut/result"
 	"io"
 	"path/filepath"
 	"strings"
-
-	"gomut/internal/gomut/result"
 )
 
 // SARIFReportData contains the metadata and records needed to render a SARIF report.
