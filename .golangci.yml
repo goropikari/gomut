@@ -15,11 +15,14 @@ linters:
     - testpackage
     - wsl_v5
     - usetesting
+    - revive
   settings:
     revive:
       rules:
         - name: package-comments
           disabled: true
+        - name: redundant-import-alias
+          disabled: false
   exclusions:
     generated: lax
     presets:

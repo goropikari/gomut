@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	gomut "github.com/goropikari/gomut/internal/gomut"
+	"github.com/goropikari/gomut/internal/gomut"
 )
 
 func TestNormalizeDiffRange(t *testing.T) {
