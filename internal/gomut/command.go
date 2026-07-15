@@ -17,6 +17,8 @@ type Command struct {
 	jsonlEnabled bool
 	htmlOutput   string
 	htmlEnabled  bool
+	sarifOutput  string
+	sarifEnabled bool
 }
 
 func NewCommand(stdout, stderr io.Writer) *Command {
@@ -24,7 +26,7 @@ func NewCommand(stdout, stderr io.Writer) *Command {
 }
 
 func (c *Command) Run(ctx context.Context, args []string) error {
-	normalizedArgs, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, err := NormalizeTestArgs(args)
+	normalizedArgs, jsonlOutput, jsonlEnabled, htmlOutput, htmlEnabled, sarifOutput, sarifEnabled, err := NormalizeTestArgs(args)
 	if err != nil {
 		return err
 	}
@@ -33,6 +35,8 @@ func (c *Command) Run(ctx context.Context, args []string) error {
 	c.jsonlEnabled = jsonlEnabled
 	c.htmlOutput = htmlOutput
 	c.htmlEnabled = htmlEnabled
+	c.sarifOutput = sarifOutput
+	c.sarifEnabled = sarifEnabled
 
 	root := c.newRootCommand()
 	root.SetOut(c.stdout)
@@ -83,6 +87,8 @@ func (c *Command) newTestCommand() *cobra.Command {
 	flags.Lookup("jsonl").NoOptDefVal = ""
 	flags.String("html", "", "html output file path")
 	flags.Lookup("html").NoOptDefVal = ""
+	flags.String("sarif", "", "sarif output file path")
+	flags.Lookup("sarif").NoOptDefVal = ""
 
 	return cmd
 }
@@ -98,7 +104,7 @@ func (c *Command) runTest(cmd *cobra.Command, args []string) error {
 	return runner.Run(cmd.Context(), cfg)
 }
 
-func NormalizeTestArgs(args []string) ([]string, string, bool, string, bool, error) {
+func NormalizeTestArgs(args []string) ([]string, string, bool, string, bool, string, bool, error) {
 	normalized := make([]string, 0, len(args))
 	state := normalizedTestArgs{}
 
@@ -114,7 +120,7 @@ func NormalizeTestArgs(args []string) ([]string, string, bool, string, bool, err
 		normalized = append(normalized, arg)
 	}
 
-	return normalized, state.jsonlOutput, state.jsonlEnabled, state.htmlOutput, state.htmlEnabled, nil
+	return normalized, state.jsonlOutput, state.jsonlEnabled, state.htmlOutput, state.htmlEnabled, state.sarifOutput, state.sarifEnabled, nil
 }
 
 type normalizedTestArgs struct {
@@ -122,44 +128,46 @@ type normalizedTestArgs struct {
 	jsonlEnabled bool
 	htmlOutput   string
 	htmlEnabled  bool
+	sarifOutput  string
+	sarifEnabled bool
 }
 
 func (n *normalizedTestArgs) consumeOutputFlag(args []string, i int, arg string) (int, bool) {
-	switch {
-	case arg == "--jsonl" || arg == "-jsonl":
+	if output, consumed, ok := consumeOptionalStringFlag(args, i, arg, "jsonl"); ok {
 		n.jsonlEnabled = true
-		output, consumed := consumeFlagValue(args, i)
 		n.jsonlOutput = output
 
 		return consumed, true
-	case strings.HasPrefix(arg, "--jsonl="):
-		n.jsonlEnabled = true
-		n.jsonlOutput = strings.TrimPrefix(arg, "--jsonl=")
+	}
 
-		return 0, true
-	case strings.HasPrefix(arg, "-jsonl="):
-		n.jsonlEnabled = true
-		n.jsonlOutput = strings.TrimPrefix(arg, "-jsonl=")
-
-		return 0, true
-	case arg == "--html" || arg == "-html":
+	if output, consumed, ok := consumeOptionalStringFlag(args, i, arg, "html"); ok {
 		n.htmlEnabled = true
-		output, consumed := consumeFlagValue(args, i)
 		n.htmlOutput = output
 
 		return consumed, true
-	case strings.HasPrefix(arg, "--html="):
-		n.htmlEnabled = true
-		n.htmlOutput = strings.TrimPrefix(arg, "--html=")
+	}
 
-		return 0, true
-	case strings.HasPrefix(arg, "-html="):
-		n.htmlEnabled = true
-		n.htmlOutput = strings.TrimPrefix(arg, "-html=")
+	if output, consumed, ok := consumeOptionalStringFlag(args, i, arg, "sarif"); ok {
+		n.sarifEnabled = true
+		n.sarifOutput = output
 
-		return 0, true
+		return consumed, true
+	}
+
+	return 0, false
+}
+
+func consumeOptionalStringFlag(args []string, i int, arg, name string) (string, int, bool) {
+	switch {
+	case arg == "--"+name || arg == "-"+name:
+		output, consumed := consumeFlagValue(args, i)
+		return output, consumed, true
+	case strings.HasPrefix(arg, "--"+name+"="):
+		return strings.TrimPrefix(arg, "--"+name+"="), 0, true
+	case strings.HasPrefix(arg, "-"+name+"="):
+		return strings.TrimPrefix(arg, "-"+name+"="), 0, true
 	default:
-		return 0, false
+		return "", 0, false
 	}
 }
 

@@ -24,6 +24,7 @@ type Config struct {
 	Progress  *string          `yaml:"progress,omitempty"`
 	JSONL     *string          `yaml:"jsonl,omitempty"`
 	HTML      *string          `yaml:"html,omitempty"`
+	SARIF     *string          `yaml:"sarif,omitempty"`
 	Type      []string         `yaml:"type,omitempty"`
 	Kind      *KindConfig      `yaml:"kind,omitempty"`
 	Parallel  *int             `yaml:"parallel,omitempty"`
@@ -98,6 +99,8 @@ type RunConfig struct {
 	JSONLEnabled         bool
 	HTMLPath             string
 	HTMLEnabled          bool
+	SARIFPath            string
+	SARIFEnabled         bool
 	ProgressMode         ProgressMode
 	ResultFilter         result.MutationResultFilter
 	Verbose              bool
@@ -123,6 +126,8 @@ type testRunInputs struct {
 	jsonlEnabled       bool
 	htmlOutput         string
 	htmlEnabled        bool
+	sarifOutput        string
+	sarifEnabled       bool
 	targetChanged      bool
 	typeChanged        bool
 	timeoutChanged     bool
@@ -220,6 +225,8 @@ func (c *Command) buildTestRunConfig(cmd *cobra.Command, args ...string) (RunCon
 		JSONLEnabled:         inputs.jsonlEnabled,
 		HTMLPath:             inputs.htmlOutput,
 		HTMLEnabled:          inputs.htmlEnabled,
+		SARIFPath:            inputs.sarifOutput,
+		SARIFEnabled:         inputs.sarifEnabled,
 		ProgressMode:         progressMode,
 		ResultFilter:         resultFilter,
 		Verbose:              inputs.verbose,
@@ -271,6 +278,8 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command, args []string) (testRunI
 		jsonlEnabled:       c.jsonlEnabled,
 		htmlOutput:         c.htmlOutput,
 		htmlEnabled:        c.htmlEnabled,
+		sarifOutput:        c.sarifOutput,
+		sarifEnabled:       c.sarifEnabled,
 		targetChanged:      len(args) > 0 || cmd.Flags().Changed("diff"),
 		typeChanged:        cmd.Flags().Changed("type"),
 		timeoutChanged:     cmd.Flags().Changed("timeout"),
@@ -422,6 +431,11 @@ func (c *Command) applyOutputConfigDefaults(inputs *testRunInputs) {
 	if !inputs.htmlEnabled && inputs.config.HTML != nil {
 		inputs.htmlOutput = *inputs.config.HTML
 		inputs.htmlEnabled = true
+	}
+
+	if !inputs.sarifEnabled && inputs.config.SARIF != nil {
+		inputs.sarifOutput = *inputs.config.SARIF
+		inputs.sarifEnabled = true
 	}
 }
 

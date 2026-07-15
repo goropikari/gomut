@@ -24,6 +24,7 @@ For the Japanese version, see [README.ja.md](README.ja.md).
 - Filter mutation candidates by kind with `--mode`, `--enable`, and `--disable`
 - Emit results as JSON Lines
 - Generate an optional HTML report
+- Generate an optional SARIF report for IDEs and editor integrations
 
 ## Install
 
@@ -99,6 +100,16 @@ gomut test ./sample --html report.html
 gomut test ./sample --jsonl mutations.jsonl --html report.html
 ```
 
+### SARIF output
+
+```bash
+gomut test ./sample --sarif
+gomut test ./sample --sarif gomut.sarif
+gomut test ./sample --jsonl mutations.jsonl --sarif gomut.sarif
+```
+
+SARIF is a good fit for editors that can import static-analysis results. For Neovim, point a SARIF-aware plugin or importer at the generated file to surface surviving mutations as diagnostics.
+
 ### Timeout
 
 Each mutation run uses a per-mutation timeout. The default is `10s`.
@@ -147,6 +158,9 @@ progress: on
 parallel: 4
 jsonl: mutations.jsonl
 html: report.html
+sarif: report.sarif
+type:
+  - lived
 kind:
   mode: standard
   enable:
@@ -176,6 +190,9 @@ By default, JSON Lines are written to `stdout`.
 - `--html` by itself writes the HTML report to `stdout`
 - `--html <path>` writes the HTML report to the given file
 - `--html <path>` without `--jsonl` suppresses JSONL output
+- `--sarif` by itself writes the SARIF report to `stdout`
+- `--sarif <path>` writes the SARIF report to the given file
+- If you request multiple pathless machine-readable outputs, only one can use `stdout`; give the others file paths
 - `--progress=auto|on|off` controls mutation progress reporting on `stderr`
 - `--progress` defaults to `auto`, which shows progress in interactive terminals and stays quiet in non-TTY and CI runs
 - `--mode` selects the base mutation kind set (`standard` or `all`)

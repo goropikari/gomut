@@ -1,6 +1,7 @@
 /gomut
 mutations.jsonl
 report.html
+report.sarif
 .cache/
 
 .dev-workflow-phase/

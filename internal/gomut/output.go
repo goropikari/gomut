@@ -8,70 +8,120 @@ import (
 	"os"
 )
 
-func (r *Runner) openCandidateOutputs(cfg RunConfig) (io.Writer, io.Writer, func(), error) {
-	var cleanup func()
-
-	jsonlWriter, jsonlCleanup, err := openJSONLOutput(cfg, r.stdout)
+func (r *Runner) openCandidateOutputs(cfg RunConfig) (io.Writer, io.Writer, io.Writer, func(), error) {
+	outputs, err := buildCandidateOutputs(cfg, r.stdout)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
-	if jsonlCleanup != nil {
-		cleanup = chainCleanup(cleanup, jsonlCleanup)
-	}
-
-	htmlWriter, htmlCleanup, err := openHTMLOutput(cfg, r.stdout)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	if htmlCleanup != nil {
-		cleanup = chainCleanup(cleanup, htmlCleanup)
-	}
-
-	return jsonlWriter, htmlWriter, cleanup, nil
+	return outputs.jsonl, outputs.html, outputs.sarif, outputs.cleanup, nil
 }
 
-func openJSONLOutput(cfg RunConfig, stdout io.Writer) (io.Writer, func(), error) {
+type candidateOutputs struct {
+	jsonl   io.Writer
+	html    io.Writer
+	sarif   io.Writer
+	cleanup func()
+}
+
+func buildCandidateOutputs(cfg RunConfig, stdout io.Writer) (candidateOutputs, error) {
+	var (
+		outputs candidateOutputs
+		cleanup func()
+	)
+
+	stdoutTaken := false
+
+	var err error
+	if outputs.sarif, cleanup, stdoutTaken, err = openConfiguredOutput(cfg.SARIFEnabled, cfg.SARIFPath, stdout, stdoutTaken); err != nil {
+		return candidateOutputs{}, err
+	}
+
+	outputs.cleanup = chainCleanup(outputs.cleanup, cleanup)
+
+	if outputs.html, cleanup, stdoutTaken, err = openConfiguredOutput(cfg.HTMLEnabled, cfg.HTMLPath, stdout, stdoutTaken); err != nil {
+		if outputs.cleanup != nil {
+			outputs.cleanup()
+		}
+
+		return candidateOutputs{}, err
+	}
+
+	outputs.cleanup = chainCleanup(outputs.cleanup, cleanup)
+
+	if outputs.jsonl, cleanup, _, err = openJSONLOutput(cfg, stdout, stdoutTaken); err != nil {
+		if outputs.cleanup != nil {
+			outputs.cleanup()
+		}
+
+		return candidateOutputs{}, err
+	}
+
+	outputs.cleanup = chainCleanup(outputs.cleanup, cleanup)
+
+	return outputs, nil
+}
+
+func openJSONLOutput(cfg RunConfig, stdout io.Writer, stdoutTaken bool) (io.Writer, func(), bool, error) {
 	if cfg.OutputPath != "" {
 		outputFile, err := openOutput(cfg.OutputPath)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, false, err
 		}
 
 		return outputFile, func() {
 			_ = outputFile.Close()
-		}, nil
+		}, false, nil
+	}
+
+	if shouldSuppressJSONLOutput(cfg, stdoutTaken) {
+		return nil, nil, false, nil
+	}
+
+	return stdout, nil, true, nil
+}
+
+func shouldSuppressJSONLOutput(cfg RunConfig, stdoutTaken bool) bool {
+	if cfg.SARIFEnabled && cfg.SARIFPath == "" {
+		return true
 	}
 
 	if cfg.HTMLEnabled && cfg.HTMLPath == "" {
-		return nil, nil, nil
+		return true
 	}
 
-	if cfg.HTMLPath != "" && !cfg.JSONLEnabled {
-		return nil, nil, nil
+	if stdoutTaken {
+		return true
 	}
 
-	return stdout, nil, nil
+	if !cfg.JSONLEnabled && (cfg.HTMLPath != "" || cfg.SARIFPath != "") {
+		return true
+	}
+
+	return false
 }
 
-func openHTMLOutput(cfg RunConfig, stdout io.Writer) (io.Writer, func(), error) {
-	if !cfg.HTMLEnabled {
-		return nil, nil, nil
+func openConfiguredOutput(enabled bool, path string, stdout io.Writer, stdoutTaken bool) (io.Writer, func(), bool, error) {
+	if !enabled {
+		return nil, nil, false, nil
 	}
 
-	if cfg.HTMLPath == "" {
-		return stdout, nil, nil
+	if path == "" && stdoutTaken {
+		return nil, nil, false, nil
 	}
 
-	outputFile, err := openOutput(cfg.HTMLPath)
+	if path == "" {
+		return stdout, nil, true, nil
+	}
+
+	outputFile, err := openOutput(path)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, false, err
 	}
 
 	return outputFile, func() {
 		_ = outputFile.Close()
-	}, nil
+	}, false, nil
 }
 
 func chainCleanup(existing, next func()) func() {
@@ -96,6 +146,20 @@ func (r *Runner) writeCandidateHTML(root string, cfg RunConfig, htmlWriter io.Wr
 
 	return report.WriteHTML(htmlWriter, report.HTMLReportData{
 		Root:      root,
+		Target:    cfg.Target,
+		StartedAt: startedAt,
+		Command:   command,
+		Summary:   summary,
+		Records:   records,
+	})
+}
+
+func (r *Runner) writeCandidateSARIF(cfg RunConfig, sarifWriter io.Writer, startedAt, command string, summary result.Summary, records []result.Record) error {
+	if !cfg.SARIFEnabled {
+		return nil
+	}
+
+	return report.WriteSARIF(sarifWriter, report.SARIFReportData{
 		Target:    cfg.Target,
 		StartedAt: startedAt,
 		Command:   command,
