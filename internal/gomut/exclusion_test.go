@@ -28,6 +28,35 @@ func TestExclusionFilterSkipFile(t *testing.T) {
 		assert.NotEmpty(t, reason)
 	})
 
+	t.Run("given a leading ./ in the pattern, it still matches the file", func(t *testing.T) {
+		// Arrange
+		root := t.TempDir()
+		filter, err := gomut.NewExclusionFilter(root, []string{"./sample/sample.go"})
+		require.NoError(t, err)
+
+		// Act
+		excluded, reason := filter.SkipFile(filepath.ToSlash(filepath.Join("sample", "sample.go")))
+
+		// Assert
+		assert.True(t, excluded)
+		assert.NotEmpty(t, reason)
+	})
+
+	t.Run("given an absolute file path pattern, it still matches the file", func(t *testing.T) {
+		// Arrange
+		root := t.TempDir()
+		absolutePattern := filepath.Join(root, "sample", "sample.go")
+		filter, err := gomut.NewExclusionFilter(root, []string{absolutePattern})
+		require.NoError(t, err)
+
+		// Act
+		excluded, reason := filter.SkipFile(filepath.ToSlash(filepath.Join("sample", "sample.go")))
+
+		// Assert
+		assert.True(t, excluded)
+		assert.NotEmpty(t, reason)
+	})
+
 	t.Run("given a non-matching file, it keeps the file", func(t *testing.T) {
 		// Arrange
 		root := t.TempDir()

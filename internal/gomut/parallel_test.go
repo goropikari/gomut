@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -104,6 +105,24 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, []string{"tmp", "internal/cache/**"}, cfg.IsolationCopyExclude)
 	})
+
+	t.Run("given exclude patterns in config and on the CLI, it combines them in the run config", func(t *testing.T) {
+		// Arrange
+		root := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(root, ".gomut.yaml"), []byte("exclude:\n  - internal/generated\n"), 0o600))
+		t.Chdir(root)
+
+		command := gomut.NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
+		cmd := gomut.NewTestCommand(command)
+		require.NoError(t, cmd.Flags().Set("exclude", "*_mock.go"))
+
+		// Act
+		cfg, err := gomut.BuildTestRunConfig(command, cmd, "./sample")
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, []string{"internal/generated", "*_mock.go"}, cfg.Exclude)
+	})
 }
 
 func TestRunnerRunCandidateLoopParallel(t *testing.T) {
@@ -142,8 +161,8 @@ func TestRunnerRunCandidateLoopParallel(t *testing.T) {
 			close(done)
 		}()
 
-		require.Equal(t, "a.go", waitForStart(t, started))
-		require.Equal(t, "b.go", waitForStart(t, started))
+		startedFiles := []string{waitForStart(t, started), waitForStart(t, started)}
+		assert.ElementsMatch(t, []string{"a.go", "b.go"}, startedFiles)
 
 		close(release)
 
@@ -220,6 +239,57 @@ func TestExecutorRun(t *testing.T) {
 		assert.Equal(t, 1, summary.NotCovered)
 		require.Len(t, records, 3)
 		assert.Equal(t, result.MutationResultNotCovered, records[1].Mutation.Result)
+	})
+
+	t.Run("given parallel covered candidates, it prepares a fresh mutation root per candidate", func(t *testing.T) {
+		// Arrange
+		root := t.TempDir()
+
+		var (
+			prepared      int
+			executedRoots []string
+			mu            sync.Mutex
+		)
+
+		candidates := parallelCandidates()
+
+		executor := gomut.NewExecutor(gomut.ExecutorConfig{
+			Root:     root,
+			Timeout:  time.Second,
+			Parallel: 2,
+			Target:   result.Target{Mode: result.TargetModePackage, Value: "./sample"},
+			ExecuteMutation: func(ctx context.Context, root string, candidate result.Candidate, timeout time.Duration) (result.MutationResult, string, error) {
+				mu.Lock()
+				executedRoots = append(executedRoots, root)
+				mu.Unlock()
+
+				return result.MutationResultKilled, "killed", nil
+			},
+			PrepareMutationRoot: func(ctx context.Context, root string) (string, func() error, error) {
+				mu.Lock()
+				prepared++
+				index := prepared
+				mu.Unlock()
+				mutationRoot := filepath.Join(root, fmt.Sprintf("mutation-root-%d", index))
+
+				return mutationRoot, func() error { return nil }, nil
+			},
+		})
+
+		// Act
+		summary, records, err := executor.Run(context.Background(), candidates, "2026-07-12T00:00:00Z", "gomut test --parallel 2", nil, nil)
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, 3, prepared)
+		assert.ElementsMatch(t, []string{
+			filepath.Join(root, "mutation-root-1"),
+			filepath.Join(root, "mutation-root-2"),
+			filepath.Join(root, "mutation-root-3"),
+		}, executedRoots)
+		assert.Equal(t, 3, summary.Total)
+		assert.Equal(t, 3, summary.Killed)
+		require.Len(t, records, 3)
 	})
 }
 

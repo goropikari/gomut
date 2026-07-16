@@ -130,32 +130,9 @@ func (e Executor) collectParallelCandidateOutcomes(ctx context.Context, candidat
 
 	var wg sync.WaitGroup
 
-	workerRoots := make([]string, 0, workerCount)
-	workerCleanups := make([]func() error, 0, workerCount)
-
-	for i := 0; i < workerCount; i++ {
-		workerRoot, cleanup, err := e.cfg.PrepareMutationRoot(ctx, e.cfg.Root)
-		if err != nil {
-			for _, workerCleanup := range workerCleanups {
-				_ = workerCleanup()
-			}
-
-			return nil, err
-		}
-
-		workerRoots = append(workerRoots, workerRoot)
-		workerCleanups = append(workerCleanups, cleanup)
-	}
-
-	defer func() {
-		for _, workerCleanup := range workerCleanups {
-			_ = workerCleanup()
-		}
-	}()
-
 	for i := 0; i < workerCount; i++ {
 		wg.Add(1)
-		go e.runParallelCandidateWorker(ctx, workerRoots[i], candidates, startedAt, command, jobs, results, &wg)
+		go e.runParallelCandidateWorker(ctx, candidates, startedAt, command, jobs, results, &wg)
 	}
 
 	go func() {
@@ -183,11 +160,36 @@ func (e Executor) collectParallelCandidateOutcomes(ctx context.Context, candidat
 	return ordered, nil
 }
 
-func (e Executor) runParallelCandidateWorker(ctx context.Context, root string, candidates []result.Candidate, startedAt, command string, jobs <-chan int, results chan<- candidateOutcome, wg *sync.WaitGroup) {
+func (e Executor) runParallelCandidateWorker(ctx context.Context, candidates []result.Candidate, startedAt, command string, jobs <-chan int, results chan<- candidateOutcome, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for index := range jobs {
-		results <- e.parallelCandidateOutcome(ctx, root, candidates[index], index, startedAt, command)
+		candidate := candidates[index]
+
+		if !candidate.Covered {
+			results <- e.parallelCandidateOutcome(ctx, e.cfg.Root, candidate, index, startedAt, command)
+			continue
+		}
+
+		root, cleanup, err := e.cfg.PrepareMutationRoot(ctx, e.cfg.Root)
+		if err != nil {
+			record := buildRecord(e.cfg.Target, startedAt, command, candidate, result.MutationResultNotViable, err.Error())
+			results <- candidateOutcome{
+				index:    index,
+				record:   record,
+				result:   result.MutationResultNotViable,
+				included: e.filterMatches(result.MutationResultNotViable),
+			}
+			continue
+		}
+
+		func() {
+			defer func() {
+				_ = cleanup()
+			}()
+
+			results <- e.parallelCandidateOutcome(ctx, root, candidate, index, startedAt, command)
+		}()
 	}
 }
 

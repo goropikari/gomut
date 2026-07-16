@@ -198,6 +198,7 @@ By default, JSON Lines are written to `stdout`.
 - `--mode` selects the base mutation kind set (`standard` or `all`)
 - `--enable` adds mutation kinds on top of the selected mode
 - `--disable` removes mutation kinds, and it wins over `--enable`
+- `--exclude` adds file patterns to skip before mutation discovery
 - When no kind flags are set, `standard` is used by default
 - Kind selection affects the JSONL records, HTML report, and summary counts
 - `--type` filters emitted mutation results after execution
@@ -245,6 +246,7 @@ The `result` field uses these values:
 `gomut` supports multiple exclusion rules:
 
 - File patterns configured in `.gomut.yaml` with `exclude`
+- File patterns passed on the CLI with `--exclude`
 - Function-level or line-level comments using `//gomut:ignore`
 
 File patterns are matched against repository-relative paths. A pattern can match a full path or a base name, so both of the following are valid:

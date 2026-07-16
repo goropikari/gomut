@@ -37,6 +37,20 @@ func TestCommandRunExclusionVerbose(t *testing.T) {
 		assert.Contains(t, stderr, "excluded by pattern")
 		assert.Contains(t, stderr, "Mutation summary")
 	})
+
+	t.Run("given exclude patterns on the CLI, it skips matching files", func(t *testing.T) {
+		// Arrange
+		root := createResultFilterFixture(t)
+
+		// Act
+		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--exclude", "sample.go", "--jsonl", "--progress=off", "--verbose"})
+
+		// Assert
+		require.NoError(t, err)
+		assert.Empty(t, stdout)
+		assert.Contains(t, stderr, "excluded by pattern")
+		assert.Contains(t, stderr, "No mutation candidates found.")
+	})
 }
 
 func createExclusionNoticeFixture(t *testing.T) string {

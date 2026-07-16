@@ -79,6 +79,7 @@ func (c *Command) newTestCommand() *cobra.Command {
 	flags.String("mode", string(result.MutationKindModeStandard), "mutation kind mode: standard or all")
 	flags.StringSlice("enable", nil, "additional mutation kinds to enable")
 	flags.StringSlice("disable", nil, "mutation kinds to disable")
+	flags.StringSlice("exclude", nil, "mutation candidate file patterns to exclude")
 	flags.Duration("timeout", 10*time.Second, "timeout per mutation")
 	flags.Int("parallel", 0, "number of concurrent mutation workers")
 	flags.String("config", "", "config file path")

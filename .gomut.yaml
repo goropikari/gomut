@@ -1,6 +1,6 @@
 target:
   mode: package
-  value: ./sample
+  value: ./sample/...
 kind:
   mode: standard
 type:
@@ -9,14 +9,20 @@ type:
   - not-covered
   - timed-out
   - not-viable
+exclude:
+  - sample/alpha
 #  enable:
 #    - bitwise_operator
 #  disable:
 #    - return
 progress: on
+# parallel: 4
 jsonl: mutations.jsonl
 html: report.html
 sarif: report.sarif
+# baseline:
+#   input: baseline-in.jsonl
+#   output: baseline-out.jsonl
 isolation:
   copy_exclude:
     - .codex

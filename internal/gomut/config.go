@@ -117,6 +117,8 @@ type testRunInputs struct {
 	progressMode       string
 	progressChanged    bool
 	verbose            bool
+	exclude            []string
+	excludeChanged     bool
 	kindMode           string
 	kindModeChanged    bool
 	kindEnable         []string
@@ -219,7 +221,7 @@ func (c *Command) buildTestRunConfig(cmd *cobra.Command, args ...string) (RunCon
 		Target:               target,
 		Timeout:              inputs.timeout,
 		Parallel:             inputs.parallel,
-		Exclude:              append([]string(nil), inputs.config.Exclude...),
+		Exclude:              append([]string(nil), inputs.exclude...),
 		IsolationCopyExclude: isolationCopyExclude(inputs.config),
 		KindFilter:           kindFilter,
 		OutputPath:           inputs.jsonlOutput,
@@ -248,6 +250,7 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command, args []string) (testRunI
 	parallel, _ := cmd.Flags().GetInt("parallel")
 	diffRange, _ := cmd.Flags().GetString("diff")
 	resultTypes, _ := cmd.Flags().GetStringSlice("type")
+	exclude, _ := cmd.Flags().GetStringSlice("exclude")
 	progressMode, _ := cmd.Flags().GetString("progress")
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	kindMode, _ := cmd.Flags().GetString("mode")
@@ -269,6 +272,8 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command, args []string) (testRunI
 		progressMode:       progressMode,
 		progressChanged:    cmd.Flags().Changed("progress"),
 		verbose:            verbose,
+		exclude:            append([]string(nil), exclude...),
+		excludeChanged:     cmd.Flags().Changed("exclude"),
 		kindMode:           kindMode,
 		kindModeChanged:    cmd.Flags().Changed("mode"),
 		kindEnable:         append([]string(nil), kindEnable...),
@@ -294,6 +299,7 @@ func (c *Command) applyTestConfigDefaults(inputs *testRunInputs) error {
 	}
 
 	c.applyResultTypeConfigDefaults(inputs)
+	c.applyExcludeConfigDefaults(inputs)
 	c.applyKindConfigDefaults(inputs)
 
 	if err := c.applyTimeoutConfigDefaults(inputs); err != nil {
@@ -321,6 +327,19 @@ func (c *Command) applyResultTypeConfigDefaults(inputs *testRunInputs) {
 	}
 
 	inputs.resultTypes = append([]string(nil), inputs.config.Type...)
+}
+
+func (c *Command) applyExcludeConfigDefaults(inputs *testRunInputs) {
+	if inputs.excludeChanged {
+		inputs.exclude = append(append([]string(nil), inputs.config.Exclude...), inputs.exclude...)
+		return
+	}
+
+	if len(inputs.config.Exclude) == 0 {
+		return
+	}
+
+	inputs.exclude = append([]string(nil), inputs.config.Exclude...)
 }
 
 func (c *Command) applyKindConfigDefaults(inputs *testRunInputs) {

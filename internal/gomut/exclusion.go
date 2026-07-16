@@ -101,19 +101,33 @@ func (f *ExclusionFilter) matchFileRule(file string) (string, bool) {
 	}
 
 	base := filepath.Base(normalized)
+	absolute := normalized
+	if f.root != "" && !filepath.IsAbs(file) {
+		absolute = filepath.ToSlash(filepath.Clean(filepath.Join(f.root, normalized)))
+	}
+	absoluteBase := filepath.Base(absolute)
 
 	for _, rawPattern := range f.patterns {
-		pattern := filepath.ToSlash(strings.TrimSpace(rawPattern))
+		pattern := normalizeExclusionPattern(rawPattern)
 		if pattern == "" {
 			continue
 		}
 
-		if patternMatches(normalized, pattern) || patternMatches(base, pattern) {
+		if patternMatches(normalized, pattern) || patternMatches(base, pattern) || patternMatches(absolute, pattern) || patternMatches(absoluteBase, pattern) {
 			return fmt.Sprintf("excluded by pattern %q", rawPattern), true
 		}
 	}
 
 	return "", false
+}
+
+func normalizeExclusionPattern(pattern string) string {
+	normalized := filepath.ToSlash(strings.TrimSpace(pattern))
+	for strings.HasPrefix(normalized, "./") {
+		normalized = strings.TrimPrefix(normalized, "./")
+	}
+
+	return normalized
 }
 
 func patternMatches(value, pattern string) bool {
