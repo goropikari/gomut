@@ -1,9 +1,10 @@
-package gomut
+package gomut_test
 
 import (
 	"strings"
 	"testing"
 
+	"github.com/goropikari/gomut/internal/gomut"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,7 +14,7 @@ func TestGoCommandEnv(t *testing.T) {
 		t.Setenv("GOFLAGS", "-count=1")
 
 		// Act
-		env := goCommandEnv()
+		env := gomut.GoCommandEnv()
 
 		// Assert
 		assert.Contains(t, envValue(env, "GOFLAGS"), "-count=1")
@@ -25,7 +26,7 @@ func TestGoCommandEnv(t *testing.T) {
 		t.Setenv("GOFLAGS", "-buildvcs=true")
 
 		// Act
-		env := goCommandEnv()
+		env := gomut.GoCommandEnv()
 
 		// Assert
 		assert.Equal(t, "-buildvcs=true", envValue(env, "GOFLAGS"))

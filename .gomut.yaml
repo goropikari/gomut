@@ -4,8 +4,11 @@ target:
 kind:
   mode: standard
 type:
+  - killed
   - lived
   - not-covered
+  - timed-out
+  - not-viable
 #  enable:
 #    - bitwise_operator
 #  disable:

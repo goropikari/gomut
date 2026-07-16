@@ -1,4 +1,4 @@
-package gomut
+package gomut_test
 
 import (
 	"bytes"
@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/goropikari/gomut/internal/gomut"
 	"github.com/goropikari/gomut/internal/gomut/result"
 
 	"github.com/stretchr/testify/assert"
@@ -25,11 +26,11 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 		require.NoError(t, os.WriteFile(filepath.Join(root, ".gomut.yaml"), []byte("parallel: 4\n"), 0o600))
 		t.Chdir(root)
 
-		command := NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
-		cmd := command.newTestCommand()
+		command := gomut.NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
+		cmd := gomut.NewTestCommand(command)
 
 		// Act
-		cfg, err := command.buildTestRunConfig(cmd, "./sample")
+		cfg, err := gomut.BuildTestRunConfig(command, cmd, "./sample")
 
 		// Assert
 		require.NoError(t, err)
@@ -42,12 +43,12 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 		require.NoError(t, os.WriteFile(filepath.Join(root, ".gomut.yaml"), []byte("parallel: 4\n"), 0o600))
 		t.Chdir(root)
 
-		command := NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
-		cmd := command.newTestCommand()
+		command := gomut.NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
+		cmd := gomut.NewTestCommand(command)
 		require.NoError(t, cmd.Flags().Set("parallel", "2"))
 
 		// Act
-		cfg, err := command.buildTestRunConfig(cmd, "./sample")
+		cfg, err := gomut.BuildTestRunConfig(command, cmd, "./sample")
 
 		// Assert
 		require.NoError(t, err)
@@ -59,11 +60,11 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 		root := t.TempDir()
 		t.Chdir(root)
 
-		command := NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
-		cmd := command.newTestCommand()
+		command := gomut.NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
+		cmd := gomut.NewTestCommand(command)
 
 		// Act
-		cfg, err := command.buildTestRunConfig(cmd, "./sample")
+		cfg, err := gomut.BuildTestRunConfig(command, cmd, "./sample")
 
 		// Assert
 		require.NoError(t, err)
@@ -75,12 +76,12 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 		root := t.TempDir()
 		t.Chdir(root)
 
-		command := NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
-		cmd := command.newTestCommand()
+		command := gomut.NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
+		cmd := gomut.NewTestCommand(command)
 		require.NoError(t, cmd.Flags().Set("verbose", "true"))
 
 		// Act
-		cfg, err := command.buildTestRunConfig(cmd, "./sample")
+		cfg, err := gomut.BuildTestRunConfig(command, cmd, "./sample")
 
 		// Assert
 		require.NoError(t, err)
@@ -93,11 +94,11 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 		require.NoError(t, os.WriteFile(filepath.Join(root, ".gomut.yaml"), []byte("isolation:\n  copy_exclude:\n    - tmp\n    - internal/cache/**\n"), 0o600))
 		t.Chdir(root)
 
-		command := NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
-		cmd := command.newTestCommand()
+		command := gomut.NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
+		cmd := gomut.NewTestCommand(command)
 
 		// Act
-		cfg, err := command.buildTestRunConfig(cmd, "./sample")
+		cfg, err := gomut.BuildTestRunConfig(command, cmd, "./sample")
 
 		// Assert
 		require.NoError(t, err)
@@ -122,8 +123,8 @@ func TestRunnerRunCandidateLoopParallel(t *testing.T) {
 		maxFlight := new(int32)
 		runner := newParallelRunnerFixture(started, release, inFlight, maxFlight, &stdout, &stderr)
 		candidates := parallelCandidates()
-		cfg := RunConfig{Parallel: 2, ResultFilter: result.MutationResultFilter{}}
-		progress := NewProgressReporter(ProgressConfig{Mode: ProgressModeOff, Writer: &stderr, Interactive: false, CI: true, Total: len(candidates)})
+		cfg := gomut.RunConfig{Parallel: 2, ResultFilter: result.MutationResultFilter{}}
+		progress := gomut.NewProgressReporter(gomut.ProgressConfig{Mode: gomut.ProgressModeOff, Writer: &stderr, Interactive: false, CI: true, Total: len(candidates)})
 		jsonl := &bytes.Buffer{}
 
 		var (
@@ -136,7 +137,7 @@ func TestRunnerRunCandidateLoopParallel(t *testing.T) {
 
 		// Act
 		go func() {
-			summary, records, runErr = runner.runCandidateLoop(context.Background(), root, cfg, candidates, "2026-07-12T00:00:00Z", "gomut test --parallel 2", jsonl, progress)
+			summary, records, runErr = gomut.RunCandidateLoop(runner, context.Background(), root, cfg, candidates, "2026-07-12T00:00:00Z", "gomut test --parallel 2", jsonl, progress)
 
 			close(done)
 		}()
@@ -192,7 +193,7 @@ func TestExecutorRun(t *testing.T) {
 		candidates := parallelCandidates()
 		candidates[1].Covered = false
 
-		executor := NewExecutor(ExecutorConfig{
+		executor := gomut.NewExecutor(gomut.ExecutorConfig{
 			Root:     root,
 			Timeout:  time.Second,
 			Parallel: 1,
@@ -234,25 +235,21 @@ func waitForStart(t *testing.T, started <-chan string) string {
 	}
 }
 
-func newParallelRunnerFixture(started chan<- string, release <-chan struct{}, inFlight, maxFlight *int32, stdout, stderr *bytes.Buffer) *Runner {
-	return &Runner{
-		stdout: stdout,
-		stderr: stderr,
-		executeMutationFunc: func(ctx context.Context, root string, candidate result.Candidate, timeout time.Duration) (result.MutationResult, string, error) {
-			active := atomic.AddInt32(inFlight, 1)
-			observeMaxFlight(active, maxFlight)
+func newParallelRunnerFixture(started chan<- string, release <-chan struct{}, inFlight, maxFlight *int32, stdout, stderr *bytes.Buffer) *gomut.Runner {
+	return gomut.NewRunnerWithExecuteMutation(stdout, stderr, func(ctx context.Context, root string, candidate result.Candidate, timeout time.Duration) (result.MutationResult, string, error) {
+		active := atomic.AddInt32(inFlight, 1)
+		observeMaxFlight(active, maxFlight)
 
-			started <- candidate.File
+		started <- candidate.File
 
-			if err := waitForParallelRelease(ctx, release); err != nil {
-				return "", "", err
-			}
+		if err := waitForParallelRelease(ctx, release); err != nil {
+			return "", "", err
+		}
 
-			defer atomic.AddInt32(inFlight, -1)
+		defer atomic.AddInt32(inFlight, -1)
 
-			return parallelMutationResult(candidate.File)
-		},
-	}
+		return parallelMutationResult(candidate.File)
+	})
 }
 
 func observeMaxFlight(active int32, maxFlight *int32) {
