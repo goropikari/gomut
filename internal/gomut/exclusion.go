@@ -102,9 +102,11 @@ func (f *ExclusionFilter) matchFileRule(file string) (string, bool) {
 
 	base := filepath.Base(normalized)
 	absolute := normalized
+
 	if f.root != "" && !filepath.IsAbs(file) {
 		absolute = filepath.ToSlash(filepath.Clean(filepath.Join(f.root, normalized)))
 	}
+
 	absoluteBase := filepath.Base(absolute)
 
 	for _, rawPattern := range f.patterns {

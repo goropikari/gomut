@@ -260,6 +260,7 @@ func TestExecutorRun(t *testing.T) {
 			Target:   result.Target{Mode: result.TargetModePackage, Value: "./sample"},
 			ExecuteMutation: func(ctx context.Context, root string, candidate result.Candidate, timeout time.Duration) (result.MutationResult, string, error) {
 				mu.Lock()
+
 				executedRoots = append(executedRoots, root)
 				mu.Unlock()
 
@@ -270,6 +271,7 @@ func TestExecutorRun(t *testing.T) {
 				prepared++
 				index := prepared
 				mu.Unlock()
+
 				mutationRoot := filepath.Join(root, fmt.Sprintf("mutation-root-%d", index))
 
 				return mutationRoot, func() error { return nil }, nil

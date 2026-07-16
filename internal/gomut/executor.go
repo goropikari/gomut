@@ -180,6 +180,7 @@ func (e Executor) runParallelCandidateWorker(ctx context.Context, candidates []r
 				result:   result.MutationResultNotViable,
 				included: e.filterMatches(result.MutationResultNotViable),
 			}
+
 			continue
 		}
 
