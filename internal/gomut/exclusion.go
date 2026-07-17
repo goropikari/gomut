@@ -115,7 +115,7 @@ func (f *ExclusionFilter) matchFileRule(file string) (string, bool) {
 			continue
 		}
 
-		if patternMatches(normalized, pattern) || patternMatches(base, pattern) || patternMatches(absolute, pattern) || patternMatches(absoluteBase, pattern) {
+		if exclusionPatternMatches(normalized, base, absolute, absoluteBase, pattern) {
 			return fmt.Sprintf("excluded by pattern %q", rawPattern), true
 		}
 	}
@@ -132,6 +132,14 @@ func normalizeExclusionPattern(pattern string) string {
 	return normalized
 }
 
+func exclusionPatternMatches(normalized, base, absolute, absoluteBase, pattern string) bool {
+	return patternMatches(normalized, pattern) ||
+		patternMatches(base, pattern) ||
+		patternMatches(absolute, pattern) ||
+		patternMatches(absoluteBase, pattern) ||
+		directoryBaseMatches(normalized, pattern)
+}
+
 func patternMatches(value, pattern string) bool {
 	matched, err := pathpkg.Match(pattern, value)
 	if err == nil && matched {
@@ -140,6 +148,21 @@ func patternMatches(value, pattern string) bool {
 
 	if !containsGlob(pattern) {
 		if value == pattern || strings.HasPrefix(value, pattern+"/") {
+			return true
+		}
+	}
+
+	return false
+}
+
+func directoryBaseMatches(value, pattern string) bool {
+	if containsGlob(pattern) || strings.Contains(pattern, "/") {
+		return false
+	}
+
+	dirs := strings.Split(pathpkg.Dir(value), "/")
+	for _, dir := range dirs {
+		if dir == pattern {
 			return true
 		}
 	}

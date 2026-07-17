@@ -10,11 +10,13 @@ type:
   - timed-out
   - not-viable
 exclude:
-  - sample/alpha
-#  enable:
-#    - bitwise_operator
-#  disable:
-#    - return
+  - db
+  - sample
+  - alpha
+# enable:
+#   - bitwise_operator
+# disable:
+#   - return
 progress: on
 # parallel: 4
 jsonl: mutations.jsonl
@@ -26,6 +28,7 @@ sarif: report.sarif
 isolation:
   copy_exclude:
     - .codex
+    - .claude
     - .worktrees
     - docs
     - internal/cache/**

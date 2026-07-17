@@ -57,6 +57,34 @@ func TestExclusionFilterSkipFile(t *testing.T) {
 		assert.NotEmpty(t, reason)
 	})
 
+	t.Run("given a directory basename pattern, it excludes files under matching directories", func(t *testing.T) {
+		// Arrange
+		root := t.TempDir()
+		filter, err := gomut.NewExclusionFilter(root, []string{"db"})
+		require.NoError(t, err)
+
+		// Act
+		excluded, reason := filter.SkipFile(filepath.ToSlash(filepath.Join("internal", "db", "sample.go")))
+
+		// Assert
+		assert.True(t, excluded)
+		assert.NotEmpty(t, reason)
+	})
+
+	t.Run("given a partial directory basename pattern, it keeps non-matching directories", func(t *testing.T) {
+		// Arrange
+		root := t.TempDir()
+		filter, err := gomut.NewExclusionFilter(root, []string{"db"})
+		require.NoError(t, err)
+
+		// Act
+		excluded, reason := filter.SkipFile(filepath.ToSlash(filepath.Join("internal", "database", "sample.go")))
+
+		// Assert
+		assert.False(t, excluded)
+		assert.Empty(t, reason)
+	})
+
 	t.Run("given a non-matching file, it keeps the file", func(t *testing.T) {
 		// Arrange
 		root := t.TempDir()
