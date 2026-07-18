@@ -6,7 +6,7 @@ LOCAL_BIN ?= $(HOME)/.local/bin
 DPRINT_INSTALL ?= $(HOME)/.dprint
 export PATH := $(DPRINT_INSTALL)/bin:$(LOCAL_BIN):$(PATH)
 
-all: fmt lint
+all: fmt fix lint
 
 fmt:
 	GOCACHE=$(GOCACHE) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) golangci-lint fmt
