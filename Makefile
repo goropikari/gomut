@@ -6,18 +6,18 @@ LOCAL_BIN ?= $(HOME)/.local/bin
 DPRINT_INSTALL ?= $(HOME)/.dprint
 export PATH := $(DPRINT_INSTALL)/bin:$(LOCAL_BIN):$(PATH)
 
-all: fmt fix lint
-
-fmt:
+fmt: fix
 	GOCACHE=$(GOCACHE) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) golangci-lint fmt
 	dprint fmt
 
 fix:
 	GOCACHE=$(GOCACHE) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) golangci-lint run --fix ./...
 
-lint:
-	gitleaks detect --no-banner --redact --source .
+lint: gitleaks fmt
 	GOCACHE=$(GOCACHE) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) golangci-lint run ./...
+
+gitleaks:
+	gitleaks detect --no-banner --redact --source .
 
 install:
 	go install ./cmd/gomut
