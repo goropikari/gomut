@@ -18,6 +18,8 @@ import (
 
 const DefaultConfigFileName = ".gomut.yaml"
 
+const userConfigFileName = "config.yaml"
+
 // Config represents gomut settings loaded from a YAML config file.
 type Config struct {
 	Target    *ConfigTarget    `yaml:"target,omitempty"`
@@ -142,6 +144,10 @@ func DefaultConfigPath(root string) string {
 	return filepath.Join(root, DefaultConfigFileName)
 }
 
+func userConfigPath(home string) string {
+	return filepath.Join(home, ".gomut", userConfigFileName)
+}
+
 // LoadConfig reads and parses a gomut config file from path.
 func LoadConfig(path string) (Config, error) {
 	if path == "" {
@@ -175,16 +181,20 @@ func (c *Command) loadTestConfig(cmd *cobra.Command) (Config, error) {
 		return Config{}, err
 	}
 
-	defaultPath := DefaultConfigPath(root)
-	if _, statErr := os.Stat(defaultPath); statErr != nil {
-		if errors.Is(statErr, os.ErrNotExist) {
-			return Config{}, nil
-		}
-
-		return Config{}, fmt.Errorf("check config %s: %w", defaultPath, statErr)
+	configPaths := []string{DefaultConfigPath(root)}
+	if home, homeErr := os.UserHomeDir(); homeErr == nil {
+		configPaths = append(configPaths, userConfigPath(home))
 	}
 
-	return LoadConfig(defaultPath)
+	for _, configPath := range configPaths {
+		if _, statErr := os.Stat(configPath); statErr == nil {
+			return LoadConfig(configPath)
+		} else if !errors.Is(statErr, os.ErrNotExist) {
+			return Config{}, fmt.Errorf("check config %s: %w", configPath, statErr)
+		}
+	}
+
+	return Config{}, nil
 }
 
 func (c *Command) buildTestRunConfig(cmd *cobra.Command, args ...string) (RunConfig, error) {

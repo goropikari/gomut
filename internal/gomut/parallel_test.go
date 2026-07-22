@@ -21,6 +21,47 @@ import (
 )
 
 func TestBuildTestRunConfigParallel(t *testing.T) {
+	t.Run("given no current directory config, it loads the user config", func(t *testing.T) {
+		// Arrange
+		root := t.TempDir()
+		home := t.TempDir()
+		require.NoError(t, os.MkdirAll(filepath.Join(home, ".gomut"), 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(home, ".gomut", "config.yaml"), []byte("parallel: 4\n"), 0o600))
+		t.Setenv("HOME", home)
+		t.Chdir(root)
+
+		command := gomut.NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
+		cmd := gomut.NewTestCommand(command)
+
+		// Act
+		cfg, err := gomut.BuildTestRunConfig(command, cmd, "./sample")
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, 4, cfg.Parallel)
+	})
+
+	t.Run("given both configs, it prioritizes the current directory config", func(t *testing.T) {
+		// Arrange
+		root := t.TempDir()
+		home := t.TempDir()
+		require.NoError(t, os.MkdirAll(filepath.Join(home, ".gomut"), 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(home, ".gomut", "config.yaml"), []byte("parallel: 4\n"), 0o600))
+		require.NoError(t, os.WriteFile(filepath.Join(root, ".gomut.yaml"), []byte("parallel: 2\n"), 0o600))
+		t.Setenv("HOME", home)
+		t.Chdir(root)
+
+		command := gomut.NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
+		cmd := gomut.NewTestCommand(command)
+
+		// Act
+		cfg, err := gomut.BuildTestRunConfig(command, cmd, "./sample")
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, 2, cfg.Parallel)
+	})
+
 	t.Run("given config parallel and no CLI worker count, it uses config value", func(t *testing.T) {
 		// Arrange
 		root := t.TempDir()

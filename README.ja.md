@@ -147,7 +147,7 @@ CLI フラグは config ファイルの値より優先されます。
 
 ### config ファイル
 
-`gomut` はデフォルトでリポジトリルートの `.gomut.yaml` を読みます。`--config` で別ファイルを指定することもできます。
+`gomut` はカレントディレクトリの `.gomut.yaml` を優先して読みます。存在しない場合は `~/.gomut/config.yaml` を読みます。`--config` で別ファイルを指定することもできます。
 
 ```yaml
 target:

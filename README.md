@@ -147,7 +147,7 @@ CLI flags override config file values.
 
 ### Config file
 
-`gomut` loads `.gomut.yaml` from the repository root by default. You can also point to a different file with `--config`.
+`gomut` loads `.gomut.yaml` from the current directory by default. If it is not present, `~/.gomut/config.yaml` is used. You can also point to a different file with `--config`.
 
 ```yaml
 target:
