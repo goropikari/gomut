@@ -13,7 +13,7 @@ func TestCommandRunProgressDisplay(t *testing.T) {
 		root := createResultFilterFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--jsonl", "--progress=on"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--jsonl", "--progress=on"})
 
 		// Assert
 		require.NoError(t, err)
@@ -27,7 +27,7 @@ func TestCommandRunProgressDisplay(t *testing.T) {
 		root := createResultFilterFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--jsonl", "--progress=auto"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--jsonl", "--progress=auto"})
 
 		// Assert
 		require.NoError(t, err)
@@ -42,7 +42,7 @@ func TestCommandRunProgressDisplay(t *testing.T) {
 		t.Setenv("CI", "true")
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--jsonl", "--progress=auto"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--jsonl", "--progress=auto"})
 
 		// Assert
 		require.NoError(t, err)
@@ -56,7 +56,7 @@ func TestCommandRunProgressDisplay(t *testing.T) {
 		root := createResultFilterFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--jsonl", "--progress=off"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--jsonl", "--progress=off"})
 
 		// Assert
 		require.NoError(t, err)

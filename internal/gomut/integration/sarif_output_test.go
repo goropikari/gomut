@@ -16,7 +16,7 @@ func TestCommandRunSARIFOutput(t *testing.T) {
 		root := createSarifFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--sarif", "--progress=off"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--sarif", "--progress=off"})
 
 		// Assert
 		require.NoError(t, err)
@@ -40,7 +40,7 @@ func TestCommandRunSARIFOutput(t *testing.T) {
 		sarifPath := filepath.Join(root, "report.sarif")
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--sarif", sarifPath, "--progress=off"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--sarif", sarifPath, "--progress=off"})
 
 		// Assert
 		require.NoError(t, err)

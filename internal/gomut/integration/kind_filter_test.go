@@ -15,7 +15,7 @@ func TestCommandRunKindFilter(t *testing.T) {
 		root := createResultFilterFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--jsonl", "--progress=off"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--jsonl", "--progress=off"})
 
 		// Assert
 		require.NoError(t, err)
@@ -41,7 +41,7 @@ func TestCommandRunKindFilter(t *testing.T) {
 		root := createResultFilterFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--enable", "bitwise_operator", "--disable", "return", "--jsonl", "--progress=off"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--enable", "bitwise_operator", "--disable", "return", "--jsonl", "--progress=off"})
 
 		// Assert
 		require.NoError(t, err)
@@ -68,7 +68,7 @@ func TestCommandRunKindFilter(t *testing.T) {
 		root := createAllModeConfigFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--jsonl", "--progress=off"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--jsonl", "--progress=off"})
 
 		// Assert
 		require.NoError(t, err)
@@ -95,7 +95,7 @@ func TestCommandRunKindFilter(t *testing.T) {
 		root := createAllModeConfigFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--enable", "string_literal", "--jsonl", "--progress=off"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--enable", "string_literal", "--jsonl", "--progress=off"})
 
 		// Assert
 		require.NoError(t, err)
@@ -120,7 +120,7 @@ func TestCommandRunKindFilter(t *testing.T) {
 		root := createKindConfigFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--disable", "bitwise_operator", "--jsonl", "--progress=off"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--disable", "bitwise_operator", "--jsonl", "--progress=off"})
 
 		// Assert
 		require.NoError(t, err)
@@ -139,7 +139,7 @@ func TestCommandRunKindFilter(t *testing.T) {
 		root := createResultFilterFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--mode", "experimental", "--jsonl", "--progress=off"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--mode", "experimental", "--jsonl", "--progress=off"})
 
 		// Assert
 		require.Error(t, err)

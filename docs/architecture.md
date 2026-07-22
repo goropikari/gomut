@@ -19,7 +19,7 @@ cmd/gomut/main.go
 
 処理の流れは次の通りです。
 
-1. CLI が `test` コマンドを受ける
+1. CLI が root command で対象 package、または `diff` subcommand で差分範囲を受ける
 2. `command.go` が flag と引数を解釈する
 3. `config.go` が YAML と flag から `RunConfig` を作る
 4. `runner.go` が実行全体を組み立てる
@@ -34,7 +34,7 @@ cmd/gomut/main.go
 
 - `command.go`
   - cobra の配線
-  - `test` コマンドの flag 定義
+  - root command の flag 定義
   - `Command.Run`
   - `NormalizeTestArgs`
 
@@ -137,7 +137,7 @@ cmd/gomut/main.go
 
 - mutation 実行前に baseline の `go test` が通ること
 - Go 1.26 以上を前提にする
-- `--diff` では git が利用可能であること
+- `diff` では git が利用可能であること
 
 ## 今後の拡張余地
 

@@ -5,7 +5,7 @@ import "io"
 var (
 	PrepareRunRootWithCopyExclude = prepareRunRoot
 	GoCommandEnv                  = goCommandEnv
-	NewTestCommand                = (*Command).newTestCommand
+	NewRootCommand                = (*Command).newRootCommand
 	BuildTestRunConfig            = (*Command).buildTestRunConfig
 	RunCandidateLoop              = (*Runner).runCandidateLoop
 )

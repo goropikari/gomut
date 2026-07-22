@@ -50,7 +50,7 @@ func TestResolveTarget(t *testing.T) {
 		// Assert
 		require.Error(t, err)
 		assert.Empty(t, target)
-		assert.Contains(t, err.Error(), "gomut test ./...")
+		assert.Contains(t, err.Error(), "gomut ./...")
 	})
 }
 

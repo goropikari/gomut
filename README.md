@@ -14,7 +14,7 @@ For the Japanese version, see [README.ja.md](README.ja.md).
 
 - Run mutation testing for a single Go package
 - Run against all Go packages in a repository with `./...`
-- Scan only the files touched by a git diff with `--diff`
+- Scan only the files touched by a git diff with the `diff` subcommand
 - Run mutation testing in an isolated temporary copy of the repository
 - Run mutations in parallel with `--parallel`
 - Discover mutation candidates from the AST
@@ -52,21 +52,21 @@ Use `./sample` for one package, or `./sample/...` to include all packages under 
 For example, `./sample/...` picks up packages such as `./sample/alpha` and `./sample/beta`.
 
 ```bash
-gomut test ./sample
-gomut test ./sample/...
+gomut ./sample
+gomut ./sample/...
 ```
 
 ### Repository packages
 
 ```bash
-gomut test ./...
+gomut ./...
 ```
 
 ### Diff mode
 
 ```bash
-gomut test --diff HEAD~1..HEAD
-gomut test --diff main
+gomut diff HEAD~1..HEAD
+gomut diff main
 ```
 
 ### Isolated execution
@@ -84,28 +84,28 @@ gomut test --diff main
 ### JSON Lines output
 
 ```bash
-gomut test ./sample --jsonl
-gomut test ./sample --jsonl mutations.jsonl
-gomut test ./sample --type lived --jsonl
-gomut test ./sample --mode all --disable string_literal --jsonl
-gomut test ./sample --enable bitwise_operator --disable return --jsonl
-gomut test ./sample --jsonl mutations.jsonl --html report.html
+gomut ./sample --jsonl
+gomut ./sample --jsonl mutations.jsonl
+gomut ./sample --type lived --jsonl
+gomut ./sample --mode all --disable string_literal --jsonl
+gomut ./sample --enable bitwise_operator --disable return --jsonl
+gomut ./sample --jsonl mutations.jsonl --html report.html
 ```
 
 ### HTML output
 
 ```bash
-gomut test ./sample --html
-gomut test ./sample --html report.html
-gomut test ./sample --jsonl mutations.jsonl --html report.html
+gomut ./sample --html
+gomut ./sample --html report.html
+gomut ./sample --jsonl mutations.jsonl --html report.html
 ```
 
 ### SARIF output
 
 ```bash
-gomut test ./sample --sarif
-gomut test ./sample --sarif gomut.sarif
-gomut test ./sample --jsonl mutations.jsonl --sarif gomut.sarif
+gomut ./sample --sarif
+gomut ./sample --sarif gomut.sarif
+gomut ./sample --jsonl mutations.jsonl --sarif gomut.sarif
 ```
 
 SARIF is a good fit for editors that can import static-analysis results. For Neovim, point a SARIF-aware plugin or importer at the generated file to surface surviving mutations as diagnostics.
@@ -115,7 +115,7 @@ SARIF is a good fit for editors that can import static-analysis results. For Neo
 Each mutation run uses a per-mutation timeout. The default is `10s`.
 
 ```bash
-gomut test ./sample --timeout 30s
+gomut ./sample --timeout 30s
 ```
 
 You can also set the default in `.gomut.yaml`:
@@ -131,7 +131,7 @@ CLI flags and positional targets override config file values.
 Progress reporting is controlled with `--progress=auto|on|off`.
 
 ```bash
-gomut test ./sample --jsonl mutations.jsonl --progress=on
+gomut ./sample --jsonl mutations.jsonl --progress=on
 ```
 
 `auto` is the default. It shows progress in interactive terminals and stays quiet in non-TTY and CI runs.
@@ -302,7 +302,7 @@ The default `standard` kind set is:
 
 - Baseline `go test` must pass before mutation testing starts
 - Go 1.26 or later is required
-- `--diff` requires git
+- `diff` requires git
 
 ## Testing
 
@@ -333,6 +333,6 @@ make lint
 When needed, verify behavior with commands such as:
 
 ```bash
-go run ./cmd/gomut test ./sample --jsonl
-./gomut test ./...
+go run ./cmd/gomut ./sample --jsonl
+./gomut ./...
 ```

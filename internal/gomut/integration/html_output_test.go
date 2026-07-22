@@ -16,7 +16,7 @@ func TestCommandRunHTMLOutput(t *testing.T) {
 		root := createResultFilterFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--html"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--html"})
 
 		// Assert
 		require.NoError(t, err)
@@ -31,7 +31,7 @@ func TestCommandRunHTMLOutput(t *testing.T) {
 		htmlPath := filepath.Join(root, "report.html")
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--html", htmlPath})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--html", htmlPath})
 
 		// Assert
 		require.NoError(t, err)
@@ -51,7 +51,7 @@ func TestCommandRunHTMLOutput(t *testing.T) {
 		htmlPath := filepath.Join(root, "report.html")
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--jsonl", jsonlPath, "--html", htmlPath})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--jsonl", jsonlPath, "--html", htmlPath})
 
 		// Assert
 		require.NoError(t, err)
@@ -73,7 +73,7 @@ func TestCommandRunHTMLOutput(t *testing.T) {
 		htmlPath := filepath.Join(root, "report.html")
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--jsonl", "--html", htmlPath})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--jsonl", "--html", htmlPath})
 
 		// Assert
 		require.NoError(t, err)
@@ -94,7 +94,7 @@ func TestCommandRunHTMLOutput(t *testing.T) {
 		htmlPath := filepath.Join(root, "filtered-report.html")
 
 		// Act
-		_, _, err := runCommandInDir(t, root, []string{"test", "./sample", "--type", "lived", "--html", htmlPath})
+		_, _, err := runCommandInDir(t, root, []string{"./sample", "--type", "lived", "--html", htmlPath})
 
 		// Assert
 		require.NoError(t, err)
@@ -111,7 +111,7 @@ func TestCommandRunHTMLOutput(t *testing.T) {
 		htmlPath := filepath.Join(root, "missing", "report.html")
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--html", htmlPath})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--html", htmlPath})
 
 		// Assert
 		require.Error(t, err)
@@ -129,7 +129,7 @@ func TestCommandRunRejectsUnexpectedArguments(t *testing.T) {
 		root := createResultFilterFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "unexpected"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "unexpected"})
 
 		// Assert
 		require.Error(t, err)

@@ -258,7 +258,7 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command, args []string) (testRunI
 
 	timeout, _ := cmd.Flags().GetDuration("timeout")
 	parallel, _ := cmd.Flags().GetInt("parallel")
-	diffRange, _ := cmd.Flags().GetString("diff")
+	diffRange := ""
 	resultTypes, _ := cmd.Flags().GetStringSlice("type")
 	exclude, _ := cmd.Flags().GetStringSlice("exclude")
 	progressMode, _ := cmd.Flags().GetString("progress")
@@ -268,7 +268,13 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command, args []string) (testRunI
 	kindDisable, _ := cmd.Flags().GetStringSlice("disable")
 
 	targetArg := ""
-	if len(args) == 1 {
+
+	if cmd.Name() == "diff" {
+		diffRange = "HEAD"
+		if len(args) == 1 {
+			diffRange = args[0]
+		}
+	} else if len(args) == 1 {
 		targetArg = args[0]
 	}
 
@@ -296,7 +302,7 @@ func (c *Command) loadTestRunInputs(cmd *cobra.Command, args []string) (testRunI
 		htmlEnabled:        c.htmlEnabled,
 		sarifOutput:        c.sarifOutput,
 		sarifEnabled:       c.sarifEnabled,
-		targetChanged:      len(args) > 0 || cmd.Flags().Changed("diff"),
+		targetChanged:      cmd.Name() == "diff" || len(args) > 0,
 		typeChanged:        cmd.Flags().Changed("type"),
 		timeoutChanged:     cmd.Flags().Changed("timeout"),
 		config:             config,
@@ -517,7 +523,7 @@ func parseProgressMode(value string) (ProgressMode, error) {
 
 func ResolveTarget(targetArg string, diffRange string) (result.Target, error) {
 	if targetArg != "" && diffRange != "" {
-		return result.Target{}, errors.New("use either a positional target or --diff, not both")
+		return result.Target{}, errors.New("use either a positional target or the diff subcommand, not both")
 	}
 
 	if diffRange != "" {
@@ -525,7 +531,7 @@ func ResolveTarget(targetArg string, diffRange string) (result.Target, error) {
 	}
 
 	if targetArg == "" {
-		return result.Target{}, errors.New("target is required. use `gomut test ./...` or `gomut test --diff <range>`")
+		return result.Target{}, errors.New("target is required. use `gomut ./...` or `gomut diff [range]`")
 	}
 
 	if targetArg == "./..." {

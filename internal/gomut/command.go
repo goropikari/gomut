@@ -40,6 +40,10 @@ func (c *Command) Run(ctx context.Context, args []string) error {
 	c.sarifEnabled = sarifEnabled
 
 	root := c.newRootCommand()
+	if !isDiffInvocation(normalizedArgs) && !containsHelpFlag(normalizedArgs) {
+		root.RemoveCommand(root.Commands()...)
+	}
+
 	root.SetOut(c.stdout)
 	root.SetErr(c.stderr)
 	root.SetArgs(normalizedArgs)
@@ -47,24 +51,23 @@ func (c *Command) Run(ctx context.Context, args []string) error {
 	return root.ExecuteContext(ctx)
 }
 
-func (c *Command) newRootCommand() *cobra.Command {
-	root := &cobra.Command{
-		Use:           "gomut",
-		SilenceErrors: true,
-		SilenceUsage:  true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return cmd.Help()
-		},
-	}
-
-	root.AddCommand(c.newTestCommand())
-
-	return root
+func isDiffInvocation(args []string) bool {
+	return len(args) > 0 && args[0] == "diff"
 }
 
-func (c *Command) newTestCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:           "test <target>",
+func containsHelpFlag(args []string) bool {
+	for _, arg := range args {
+		if arg == "--help" || arg == "-h" {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (c *Command) newRootCommand() *cobra.Command {
+	root := &cobra.Command{
+		Use:           "gomut <target>",
 		Short:         "Run mutation testing",
 		SilenceErrors: true,
 		SilenceUsage:  true,
@@ -73,8 +76,26 @@ func (c *Command) newTestCommand() *cobra.Command {
 		},
 	}
 
+	c.addRunFlags(root)
+
+	diff := &cobra.Command{
+		Use:           "diff [range]",
+		Short:         "Run mutation testing for changed files",
+		SilenceErrors: true,
+		SilenceUsage:  true,
+		Args:          cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return c.runTest(cmd, args)
+		},
+	}
+	c.addRunFlags(diff)
+	root.AddCommand(diff)
+
+	return root
+}
+
+func (c *Command) addRunFlags(cmd *cobra.Command) {
 	flags := cmd.Flags()
-	flags.String("diff", "", "git diff range or branch name, for example HEAD~1..HEAD or main")
 	flags.StringSlice("type", nil, "mutation result types to output")
 	flags.String("mode", string(result.MutationKindModeStandard), "mutation kind mode: standard or all")
 	flags.StringSlice("enable", nil, "additional mutation kinds to enable")
@@ -91,8 +112,6 @@ func (c *Command) newTestCommand() *cobra.Command {
 	flags.Lookup("html").NoOptDefVal = ""
 	flags.String("sarif", "", "sarif output file path")
 	flags.Lookup("sarif").NoOptDefVal = ""
-
-	return cmd
 }
 
 func (c *Command) runTest(cmd *cobra.Command, args []string) error {

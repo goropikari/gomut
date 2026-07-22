@@ -34,7 +34,7 @@ func TestWriteHTML(t *testing.T) {
 			{
 				Target:    result.Target{Mode: result.TargetModePackage, Value: "./sample"},
 				StartedAt: "2026-07-12T01:02:03Z",
-				Command:   "gomut test ./sample --html",
+				Command:   "gomut ./sample --html",
 				Summary: result.Summary{
 					Total:      2,
 					Killed:     1,
@@ -73,7 +73,7 @@ func TestWriteHTML(t *testing.T) {
 		rendered := html.UnescapeString(output.String())
 		assert.Contains(t, rendered, "<!doctype html")
 		assert.Contains(t, rendered, "2026-07-12T01:02:03Z")
-		assert.Contains(t, rendered, "gomut test ./sample --html")
+		assert.Contains(t, rendered, "gomut ./sample --html")
 		assert.Contains(t, rendered, "sample.go")
 		assert.Contains(t, rendered, "comparison_operator")
 		assert.Contains(t, rendered, "killed by tests")

@@ -15,7 +15,7 @@ func TestCommandRunExclusionVerbose(t *testing.T) {
 		root := createExclusionNoticeFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--jsonl", "--progress=off"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--jsonl", "--progress=off"})
 
 		// Assert
 		require.NoError(t, err)
@@ -29,7 +29,7 @@ func TestCommandRunExclusionVerbose(t *testing.T) {
 		root := createExclusionNoticeFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--jsonl", "--progress=off", "--verbose"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--jsonl", "--progress=off", "--verbose"})
 
 		// Assert
 		require.NoError(t, err)
@@ -43,7 +43,7 @@ func TestCommandRunExclusionVerbose(t *testing.T) {
 		root := createResultFilterFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--exclude", "sample.go", "--jsonl", "--progress=off", "--verbose"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--exclude", "sample.go", "--jsonl", "--progress=off", "--verbose"})
 
 		// Assert
 		require.NoError(t, err)

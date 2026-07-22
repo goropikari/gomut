@@ -17,7 +17,7 @@ func TestCommandRunConfig(t *testing.T) {
 		jsonlPath := filepath.Join(root, "default-config.jsonl")
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{})
 
 		// Assert
 		require.NoError(t, err)
@@ -40,7 +40,7 @@ func TestCommandRunConfig(t *testing.T) {
 		jsonlPath := filepath.Join(root, "explicit-config.jsonl")
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--config", filepath.Join("configs", "gomut.yaml")})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"--config", filepath.Join("configs", "gomut.yaml")})
 
 		// Assert
 		require.NoError(t, err)
@@ -62,7 +62,7 @@ func TestCommandRunConfig(t *testing.T) {
 		jsonlPath := filepath.Join(root, "override.jsonl")
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./alt", "--jsonl", jsonlPath})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./alt", "--jsonl", jsonlPath})
 
 		// Assert
 		require.NoError(t, err)
@@ -80,7 +80,7 @@ func TestCommandRunConfig(t *testing.T) {
 		jsonlPath := filepath.Join(root, "progress-override.jsonl")
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--jsonl", jsonlPath, "--progress=off"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--jsonl", jsonlPath, "--progress=off"})
 
 		// Assert
 		require.NoError(t, err)
@@ -98,7 +98,7 @@ func TestCommandRunConfig(t *testing.T) {
 		root := createNoConfigFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--jsonl"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--jsonl"})
 
 		// Assert
 		require.NoError(t, err)
@@ -111,13 +111,13 @@ func TestCommandRunConfig(t *testing.T) {
 		root := createNoConfigFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "--jsonl"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"--jsonl"})
 
 		// Assert
 		require.Error(t, err)
 		assert.Empty(t, stdout)
 		assert.Empty(t, stderr)
-		assert.Contains(t, err.Error(), "gomut test ./...")
+		assert.Contains(t, err.Error(), "gomut ./...")
 	})
 
 	t.Run("given a malformed config file, it fails with a clear error", func(t *testing.T) {
@@ -126,7 +126,7 @@ func TestCommandRunConfig(t *testing.T) {
 		require.NoError(t, os.WriteFile(filepath.Join(root, ".gomut.yaml"), []byte("target:\n  mode: [\n"), 0o600))
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{})
 
 		// Assert
 		require.Error(t, err)

@@ -31,7 +31,7 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 		t.Chdir(root)
 
 		command := gomut.NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
-		cmd := gomut.NewTestCommand(command)
+		cmd := gomut.NewRootCommand(command)
 
 		// Act
 		cfg, err := gomut.BuildTestRunConfig(command, cmd, "./sample")
@@ -52,7 +52,7 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 		t.Chdir(root)
 
 		command := gomut.NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
-		cmd := gomut.NewTestCommand(command)
+		cmd := gomut.NewRootCommand(command)
 
 		// Act
 		cfg, err := gomut.BuildTestRunConfig(command, cmd, "./sample")
@@ -69,7 +69,7 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 		t.Chdir(root)
 
 		command := gomut.NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
-		cmd := gomut.NewTestCommand(command)
+		cmd := gomut.NewRootCommand(command)
 
 		// Act
 		cfg, err := gomut.BuildTestRunConfig(command, cmd, "./sample")
@@ -86,7 +86,7 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 		t.Chdir(root)
 
 		command := gomut.NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
-		cmd := gomut.NewTestCommand(command)
+		cmd := gomut.NewRootCommand(command)
 		require.NoError(t, cmd.Flags().Set("parallel", "2"))
 
 		// Act
@@ -103,7 +103,7 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 		t.Chdir(root)
 
 		command := gomut.NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
-		cmd := gomut.NewTestCommand(command)
+		cmd := gomut.NewRootCommand(command)
 
 		// Act
 		cfg, err := gomut.BuildTestRunConfig(command, cmd, "./sample")
@@ -119,7 +119,7 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 		t.Chdir(root)
 
 		command := gomut.NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
-		cmd := gomut.NewTestCommand(command)
+		cmd := gomut.NewRootCommand(command)
 		require.NoError(t, cmd.Flags().Set("verbose", "true"))
 
 		// Act
@@ -137,7 +137,7 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 		t.Chdir(root)
 
 		command := gomut.NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
-		cmd := gomut.NewTestCommand(command)
+		cmd := gomut.NewRootCommand(command)
 
 		// Act
 		cfg, err := gomut.BuildTestRunConfig(command, cmd, "./sample")
@@ -154,7 +154,7 @@ func TestBuildTestRunConfigParallel(t *testing.T) {
 		t.Chdir(root)
 
 		command := gomut.NewCommand(bytes.NewBuffer(nil), bytes.NewBuffer(nil))
-		cmd := gomut.NewTestCommand(command)
+		cmd := gomut.NewRootCommand(command)
 		require.NoError(t, cmd.Flags().Set("exclude", "*_mock.go"))
 
 		// Act
@@ -197,7 +197,7 @@ func TestRunnerRunCandidateLoopParallel(t *testing.T) {
 
 		// Act
 		go func() {
-			summary, records, runErr = gomut.RunCandidateLoop(runner, context.Background(), root, cfg, candidates, "2026-07-12T00:00:00Z", "gomut test --parallel 2", jsonl, progress)
+			summary, records, runErr = gomut.RunCandidateLoop(runner, context.Background(), root, cfg, candidates, "2026-07-12T00:00:00Z", "gomut --parallel 2", jsonl, progress)
 
 			close(done)
 		}()
@@ -269,7 +269,7 @@ func TestExecutorRun(t *testing.T) {
 		})
 
 		// Act
-		summary, records, err := executor.Run(context.Background(), candidates, "2026-07-12T00:00:00Z", "gomut test --parallel 1", nil, nil)
+		summary, records, err := executor.Run(context.Background(), candidates, "2026-07-12T00:00:00Z", "gomut --parallel 1", nil, nil)
 
 		// Assert
 		require.NoError(t, err)
@@ -320,7 +320,7 @@ func TestExecutorRun(t *testing.T) {
 		})
 
 		// Act
-		summary, records, err := executor.Run(context.Background(), candidates, "2026-07-12T00:00:00Z", "gomut test --parallel 2", nil, nil)
+		summary, records, err := executor.Run(context.Background(), candidates, "2026-07-12T00:00:00Z", "gomut --parallel 2", nil, nil)
 
 		// Assert
 		require.NoError(t, err)

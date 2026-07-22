@@ -23,7 +23,7 @@ func TestCommandRunTypeFilter(t *testing.T) {
 		root := createResultFilterFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--type", "not-covered"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--type", "not-covered"})
 
 		// Assert
 		require.NoError(t, err)
@@ -55,7 +55,7 @@ func TestCommandRunTypeFilter(t *testing.T) {
 		root := createResultFilterFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--type", "killed,lived"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--type", "killed,lived"})
 
 		// Assert
 		require.NoError(t, err)
@@ -85,7 +85,7 @@ func TestCommandRunTypeFilter(t *testing.T) {
 		root := createResultFilterFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--type", "killed", "--type", "timed-out"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--type", "killed", "--type", "timed-out"})
 
 		// Assert
 		require.NoError(t, err)
@@ -114,7 +114,7 @@ func TestCommandRunTypeFilter(t *testing.T) {
 		root := createResultFilterFixture(t)
 
 		// Act
-		stdout, stderr, err := runCommandInDir(t, root, []string{"test", "./sample", "--type", "unknown"})
+		stdout, stderr, err := runCommandInDir(t, root, []string{"./sample", "--type", "unknown"})
 
 		// Assert
 		require.Error(t, err)
