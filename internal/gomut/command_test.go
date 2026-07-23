@@ -71,6 +71,7 @@ func TestDiffCommand(t *testing.T) {
 		// Assert
 		require.NoError(t, err)
 		assert.Contains(t, output.String(), "gomut diff HEAD~1..HEAD")
+		assert.Contains(t, output.String(), "gomut diff main...HEAD")
 		assert.Contains(t, output.String(), "gomut diff main")
 	})
 }

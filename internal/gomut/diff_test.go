@@ -53,6 +53,15 @@ func TestNormalizeDiffRange(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "HEAD~1..HEAD", got)
 	})
+
+	t.Run("given a three-dot range, it preserves the value", func(t *testing.T) {
+		// Arrange
+		got, err := gomut.NormalizeDiffRange(context.Background(), t.TempDir(), "main...HEAD")
+
+		// Assert
+		require.NoError(t, err)
+		assert.Equal(t, "main...HEAD", got)
+	})
 }
 
 func TestDiffFiles(t *testing.T) {

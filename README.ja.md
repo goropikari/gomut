@@ -66,6 +66,7 @@ gomut ./...
 
 ```bash
 gomut diff HEAD~1..HEAD
+gomut diff main...HEAD
 gomut diff main
 ```
 

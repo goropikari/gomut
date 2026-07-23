@@ -38,7 +38,7 @@ func NormalizeDiffRange(ctx context.Context, root, diffRange string) (string, er
 		return "HEAD", nil
 	}
 
-	if diffRange == "HEAD" || strings.Contains(diffRange, "..") {
+	if diffRange == "HEAD" || strings.Contains(diffRange, "...") || strings.Contains(diffRange, "..") {
 		return diffRange, nil
 	}
 
