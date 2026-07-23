@@ -1,6 +1,7 @@
 package gomut_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -51,6 +52,26 @@ func TestResolveTarget(t *testing.T) {
 		require.Error(t, err)
 		assert.Empty(t, target)
 		assert.Contains(t, err.Error(), "gomut ./...")
+	})
+}
+
+func TestDiffCommand(t *testing.T) {
+	t.Run("given help, it displays usage examples", func(t *testing.T) {
+		// Arrange
+		output := new(bytes.Buffer)
+		command := gomut.NewCommand(output, output)
+		cmd := gomut.NewRootCommand(command)
+		cmd.SetOut(output)
+		cmd.SetErr(output)
+		cmd.SetArgs([]string{"diff", "--help"})
+
+		// Act
+		err := cmd.Execute()
+
+		// Assert
+		require.NoError(t, err)
+		assert.Contains(t, output.String(), "gomut diff HEAD~1..HEAD")
+		assert.Contains(t, output.String(), "gomut diff main")
 	})
 }
 

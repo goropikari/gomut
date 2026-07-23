@@ -81,6 +81,7 @@ func (c *Command) newRootCommand() *cobra.Command {
 	diff := &cobra.Command{
 		Use:           "diff [range]",
 		Short:         "Run mutation testing for changed files",
+		Example:       "  gomut diff HEAD~1..HEAD\n  gomut diff main",
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		Args:          cobra.MaximumNArgs(1),
